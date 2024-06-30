@@ -19,13 +19,7 @@ const PolicyModal = () => {
         <div className="grid gap-4 py-4">
           <h2 className="text-lg font-bold">Terms of Service</h2>
           <p className='text-slate-300'>
-            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-            EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-            MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-            IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-            CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-            TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-            SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+          By using this web application, you agree to comply with and be bound by these Terms and Conditions. This platform is provided "as is" without any warranties, and your use of the application is at your own risk. We reserve the right to modify or discontinue the service at any time without prior notice. Unauthorized use of this application may give rise to a claim for damages and/or be a criminal offense. By continuing to use the application, you acknowledge and accept these terms in full.
           </p>
           <h2 className="text-lg font-bold">Privacy Policy</h2>
           <p className='text-slate-300'>
@@ -33,11 +27,7 @@ const PolicyModal = () => {
             and WebAuthn authenticators which resets every 2 hours.
           </p>
           <p className='text-slate-300'>
-            Data provided to this site is exclusively used to support signing in
-            and is not passed to any third party services, other than via SMTP or
-            OAuth for the purposes of authentication. And Vercel KV / Upstash for
-            hosting the Key Value store. This data is deleted every 2 hours via
-            cron job.
+          We value your privacy and are committed to protecting your personal information. This policy outlines how we collect, use, and safeguard your data when you use our application. We only collect the information necessary to provide and improve our services. Your data will not be sold or shared with third parties without your consent, except as required by law. By using the application, you consent to the collection and use of your information as described in this policy.
           </p>
         </div>
       </DialogContent>
