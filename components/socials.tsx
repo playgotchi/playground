@@ -12,12 +12,12 @@ const SocialsLinks = () => {
       </li>
       <li className='hover:opacity-60'>
         <Link href={'https://hey.xyz/u/playgotchi'} target="_blank" rel="noopener noreferrer" className='hover:cursor-py-cursor-hover'>
-          <Image src={'/hey.png'} width={24} height={24} alt='warpcast' className='grayscale'/>
+          <Image src={'/hey.png'} width={24} height={24} alt='hey' />
         </Link>
       </li>
       <li className='hover:opacity-60'>
         <Link href={'https://playgotchi.com'} target="_blank" rel="noopener noreferrer" className='hover:cursor-py-cursor-hover'>
-          <Image src={'/monomark.png'} width={24} height={24} alt='warpcast' />
+          <Image src={'/monomark.png'} width={24} height={24} alt='playgotchi' />
         </Link>
       </li>
       
