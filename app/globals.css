@@ -46,6 +46,16 @@
   }
 }
 
+@font-face {
+  font-family: 'Britney Onchain';
+  src: url('/britney-onchain.ttf') format('ttf');
+}
+
+@font-face {
+  font-family: 'based pixel';
+  src: url('/based-pixels.ttf') format('ttf');
+}
+
 .typewriter {
   overflow: hidden;
   white-space: nowrap;

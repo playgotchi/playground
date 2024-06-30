@@ -88,15 +88,17 @@ export const directionOptions = [
 ];
 
 export const fontFamilyOptions = [
-  { value: "Helvetica", label: "Helvetica" },
-  { value: "Times New Roman", label: "Times New Roman" },
-  { value: "Comic Sans MS", label: "Comic Sans MS" },
-  { value: "Brush Script MT", label: "Brush Script MT" },
-  { value: "Fragment Mono", label: "Fragment Mono" },
-  { value: "Montserrat", label: "Montserrat" },
   { value: "Arial", label: "Arial" },
-  { value: "Trebuchet MS", label: "Trebuchet MS" },
+  { value: "based pixels", label: "Based Pixel" },
+  { value: "Britney Onchain", label: "Britney Onchain" },
+  { value: "Brush Script MT", label: "Brush Script MT" },
+  { value: "Comic Sans MS", label: "Comic Sans MS" },
   { value: "Courier New", label: "Courier New" },
+  { value: "Fragment Mono", label: "Fragment Mono" },
+  { value: "Helvetica", label: "Helvetica" },
+  { value: "Montserrat", label: "Montserrat" },
+  { value: "Times New Roman", label: "Times New Roman" },
+  { value: "Trebuchet MS", label: "Trebuchet MS" },
 ];
 
 export const fontSizeOptions = [
