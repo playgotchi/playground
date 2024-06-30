@@ -23,10 +23,6 @@ const PolicyModal = () => {
           </p>
           <h2 className="text-lg font-bold">Privacy Policy</h2>
           <p className='text-slate-300'>
-            This site uses JSON Web Tokens and a Key-Value database for sessions
-            and WebAuthn authenticators which resets every 2 hours.
-          </p>
-          <p className='text-slate-300'>
           We value your privacy and are committed to protecting your personal information. This policy outlines how we collect, use, and safeguard your data when you use our application. We only collect the information necessary to provide and improve our services. Your data will not be sold or shared with third parties without your consent, except as required by law. By using the application, you consent to the collection and use of your information as described in this policy.
           </p>
         </div>
