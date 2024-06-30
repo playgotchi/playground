@@ -24,28 +24,31 @@ export default async function Index() {
       <main className="flex-auto w-full  max-w-7xl m-auto gap-8 ">
         <h1 className="text-3xl font-bold text-center animate-pulse">Welcome to Playground</h1>
         <p className="text-center m-4 text-white/75">You must carry one of thse nfts to access this site.</p>
-        <div className="flex gap-24 justify-center  mt-8">
+        <div className="flex gap-24 justify-center mt-8">
           
-          <div className="flex flex-col gap-4 border-4 border-blue-200 shadow-lg p-4 bg-white rounded-md transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2">
-            <Image src="/baldjessy.gif" alt={""} width={200} height={200} unoptimized      
+          <div className="flex flex-col gap-4 border-4 border-b-8 border-blue-500 shadow-lg p-4 bg-white rounded-md transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2 min-w-56">
+            <Image src="/baldjessy.gif" alt={"Bald Jesse"} width={200} height={200} unoptimized      
             />
-            <h3 className="text-black text-center typewriter">OnChain Summer</h3>
-            <Link href={"https://opensea.io/collection/supabald-jesse"}>
+            <h3 className="text-teal-900 text-center typewriter font-bold">Let’s get Jesse bald!</h3>
+            <Link href={"https://letsgetjessebald.com/"}>
               <Button variant={'secondary'}>Check it out</Button>
             </Link>
           </div>
-          <div className="flex flex-col gap-4 border-4 border-[#4FFF14] shadow-lg p-4 bg-white rounded-md transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2">
+          <div className="flex flex-col gap-4 border-4 border-b-8 border-[#4FFF14] shadow-lg p-4 bg-white rounded-md transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2 min-w-56">
             <Image src="/playtonium.gif" alt={""} width={200} height={200} unoptimized  
             />
-            <h3 className="text-black text-center typewriter">Playgotchi</h3>
-            <Link href={"https://opensea.io/collection/playtonium"}>
+            <h3 className="text-teal-900 text-center typewriter font-bold">Playgotchi</h3>
+            <Link href={"/"}>
               <Button variant={'secondary'}>Check it out</Button>
             </Link>
           </div>
-          <div className="flex flex-col gap-4 border-4 border-yellow-200 shadow-lg p-4 bg-white rounded-md transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2">
-            <Image src="/summer/frame-yellow.png" alt={""} width={200} height={200}       
+          <div className="flex flex-col gap-4 border-4 border-b-8 border-yellow-500 shadow-lg p-4 bg-white rounded-md transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2 min-w-56">
+            <Image src="/yellow-collective.png" alt={"Yellow Collective"} width={200} height={200}       
             />
-            <h3 className="text-black text-center typewriter">Yellow Collective</h3>
+            <h3 className="text-teal-900 text-center typewriter font-bold">Collective Nouns</h3>
+            <Link href={"https://www.yellowcollective.xyz/"}>
+              <Button variant={'secondary'}>Check it out</Button>
+            </Link>
           </div>
         </div>
       </main>
