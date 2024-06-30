@@ -27,9 +27,6 @@ import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
 
-import { onChainStickerOptions } from "@/lib/utils";
-import StickerMenu from "./StickerMenu";
-
 const CanvasComponent = () => {
 
   const undo = useUndo();

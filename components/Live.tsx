@@ -12,6 +12,7 @@ import LiveCursors from "./cursors/LiveCursors";
 import FlyingReaction from "./reaction/FlyingReaction";
 import ReactionSelector from "./reaction/ReactionButton";
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem } from "./ui/context-menu";
+import { Comments } from "./comments/Comments";
 
 
 type Props = {
@@ -250,6 +251,7 @@ const Live = ({ canvasRef, undo, redo }: Props) => {
 
         {/* Show the live cursors of other users */}
         <LiveCursors others={others} />
+        <Comments/>
         
       </ContextMenuTrigger>
 

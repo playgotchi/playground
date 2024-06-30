@@ -11,6 +11,7 @@ import { Button } from "./ui/button";
 import ShapesMenu from "./ShapesMenu";
 import Link from "next/link";
 import { DynamicWidget } from "@/lib/dynamic";
+import { NewThread } from "./comments/NewThread";
 
 
 const Navbar = ({ activeElement, imageInputRef, handleImageUpload, handleActiveElement }: NavbarProps) => {
@@ -44,7 +45,19 @@ const Navbar = ({ activeElement, imageInputRef, handleImageUpload, handleActiveE
               handleActiveElement={handleActiveElement}
               handleImageUpload={handleImageUpload}
               />
-            ): (
+            ) : item?.value === "comments" ? (
+              // If value is comments, trigger the NewThread component
+              <NewThread>
+                <Button className="relative w-5 h-5 object-contain">
+                  <Image
+                    src={item.icon}
+                    alt={item.name}
+                    fill
+                    className={isActive(item.value) ? "invert" : ""}
+                  />
+                </Button>
+              </NewThread>
+            ) : (
               <Button className="relative w-5 h-5 object-contain">
                 <Image
                   src={item.icon}
