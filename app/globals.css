@@ -60,3 +60,7 @@
 @keyframes blink {
   50% { border-color: transparent; }
 }
+
+.dynamic-widget-inline-controls {
+  cursor: url(/cursor-hover.png), auto;
+}

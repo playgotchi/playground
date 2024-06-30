@@ -9,16 +9,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
         outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+          "border border-input bg-background hover:bg-accent hover:text-accent-foreground hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
         secondary:
-          "border border-[#4FFF14] text-teal-900 hover:bg-secondary/80 w-full",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-        primary: "bg-[#4FFF14] text-black hover:bg-[#4FFF14]/60 w-full",
+          "border border-[#4FFF14] text-teal-900 hover:bg-secondary/80 hover:cursor-py-cursor-hover w-full hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
+        ghost: "hover:bg-accent hover:text-accent-foreground active:cursor-py-cursor-press",
+        link: "text-primary underline-offset-4 hover:underline hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
+        primary: "bg-[#4FFF14] text-black hover:bg-[#4FFF14]/60 w-full hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
       },
       size: {
         default: "h-10 px-4 py-2",

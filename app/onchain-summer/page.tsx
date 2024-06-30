@@ -8,7 +8,7 @@ const onChainSummerPage = () => {
   return (
     <LogInWrapper>
       <Room roomId='summer' fallback={null}>
-        <CanvasComponent roomId='summer' />
+        <CanvasComponent />
       </Room>
     </LogInWrapper>
   )

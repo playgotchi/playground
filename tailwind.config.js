@@ -17,8 +17,9 @@ module.exports = {
     },
     extend: {
       cursor: {
-        'py-pointer': 'url("public\cursors\cursor.png"), pointer',
-        // add grab and hand
+        'py-cursor-normal': 'url(/cursor-pointer.png), auto',
+        'py-cursor-hover': 'url(/cursor-hover.png), grab',
+        'py-cursor-press': 'url(/cursor-grab.png), grabbing',
       },
       colors: {
         border: "hsl(var(--border))",

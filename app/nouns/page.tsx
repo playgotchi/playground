@@ -8,7 +8,7 @@ const NounPage = () => {
   return (
     <LogInWrapper>
       <Room roomId='nouns' fallback={null}>
-        <CanvasComponent roomId='nouns' />
+        <CanvasComponent />
       </Room>
     </LogInWrapper>
   )

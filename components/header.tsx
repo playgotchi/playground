@@ -16,13 +16,13 @@ export default function Header() {
             alt={"Playground logo"}
             width={240}
             height={40}
-            className="animate-pulse transition-all"
+            className="animate-pulse transition-all hover:cursor-py-cursor-hover active:cursor-py-cursor-press"
           />
         </Link>
         <div className="flex items-center gap-4">
         {isLoggedIn && (
             <Link href="/dashboard">
-              <Button>Dashboard</Button>
+              <Button variant={'primary'}>Dashboard</Button>
             </Link>
           )}
           <DynamicWidget />

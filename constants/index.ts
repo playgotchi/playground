@@ -55,7 +55,7 @@ export const navElements = [
     name: "Delete",
   },
   {
-    icon: "/assets/image.svg",
+    icon: "/assets/sticker.png",
     value: "sticker",
     name: "Sticker",
   },
@@ -92,6 +92,11 @@ export const fontFamilyOptions = [
   { value: "Times New Roman", label: "Times New Roman" },
   { value: "Comic Sans MS", label: "Comic Sans MS" },
   { value: "Brush Script MT", label: "Brush Script MT" },
+  { value: "Fragment Mono", label: "Fragment Mono" },
+  { value: "Montserrat", label: "Montserrat" },
+  { value: "Arial", label: "Arial" },
+  { value: "Trebuchet MS", label: "Trebuchet MS" },
+  { value: "Courier New", label: "Courier New" },
 ];
 
 export const fontSizeOptions = [

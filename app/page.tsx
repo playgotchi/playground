@@ -19,18 +19,17 @@ export default async function Index() {
 
   return (
     <SessionProvider session={session}>
-      <div className="flex flex-col justify-between w-full h-full min-h-screen bg-background">
+      <div className="flex flex-col justify-between w-full h-full min-h-screen bg-background cursor-py-cursor-normal">
       <Header />
       <main className="flex-auto w-full  max-w-7xl m-auto gap-8 ">
         <h1 className="text-3xl font-bold text-center animate-pulse">Welcome to Playground</h1>
         <p className="text-center m-4 text-white/75">You must carry one of thse nfts to access this site.</p>
-        <div className="flex gap-24 justify-center mt-8">
-          
+        <div className="flex gap-24 justify-center mt-8">          
           <div className="flex flex-col gap-4 border-4 border-b-8 border-blue-500 shadow-lg p-4 bg-white rounded-md transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2 min-w-56">
             <Image src="/baldjessy.gif" alt={"Bald Jesse"} width={200} height={200} unoptimized      
             />
             <h3 className="text-teal-900 text-center typewriter font-bold">Let’s get Jesse bald!</h3>
-            <Link href={"https://letsgetjessebald.com/"}>
+            <Link href={"https://letsgetjessebald.com/"} target="_blank" rel="noopener noreferrer">
               <Button variant={'secondary'}>Check it out</Button>
             </Link>
           </div>
@@ -38,7 +37,7 @@ export default async function Index() {
             <Image src="/playtonium.gif" alt={""} width={200} height={200} unoptimized  
             />
             <h3 className="text-teal-900 text-center typewriter font-bold">Playgotchi</h3>
-            <Link href={"/"}>
+            <Link href={"/"} target="_blank" rel="noopener noreferrer">
               <Button variant={'secondary'}>Check it out</Button>
             </Link>
           </div>
@@ -46,7 +45,7 @@ export default async function Index() {
             <Image src="/yellow-collective.png" alt={"Yellow Collective"} width={200} height={200}       
             />
             <h3 className="text-teal-900 text-center typewriter font-bold">Collective Nouns</h3>
-            <Link href={"https://www.yellowcollective.xyz/"}>
+            <Link href={"https://www.yellowcollective.xyz/"} target="_blank" rel="noopener noreferrer">
               <Button variant={'secondary'}>Check it out</Button>
             </Link>
           </div>

@@ -97,26 +97,3 @@ export const getShapeInfo = (shapeType: string) => {
       };
   }
 };
-
-// onchain summer
-
-export const onChainStickerOptions = [
-  { value: "image1", src: "/stickerpack/base-logo-sticker-1.png", width: 40, height: 40, alt: '' },
-  { value: "image2", src: "/stickerpack/Based-sticker.png", width: 40, height: 40, alt: '' },
-  { value: "image3", src: "public/stickers/Based-sticker-1.png", width: 40, height: 40, alt: '' },
-  { value: "image4", src: "/stickerpack/base-logo-sticker-2.png", width: 40, height: 40, alt: '' },
-  { value: "image5", src: "/images/image1.png", width: 40, height: 40, alt: '' },
-  { value: "image6", src: "/images/image1.png", width: 40, height: 40, alt: '' },
-  { value: "image7", src: "/images/image1.png", width: 40, height: 40, alt: '' },
-  { value: "image8", src: "/images/image1.png", width: 40, height: 40, alt: '' },
-  { value: "image9", src: "/images/image1.png", width: 40, height: 40, alt: '' },
-  { value: "image10", src: "/images/image1.png", width: 40, height: 40, alt: '' },
-  { value: "image11", src: "/images/image1.png", width: 40, height: 40, alt: '' },
-  { value: "image12", src: "/images/image1.png", width: 40, height: 40, alt: '' },
-  { value: "image12", src: "/images/image1.png", width: 40, height: 40, alt: '' },
-  { value: "image9", src: "/images/image1.png", width: 40, height: 40, alt: '' },
-  { value: "image10", src: "/images/image1.png", width: 40, height: 40, alt: '' },
-  { value: "image11", src: "/images/image1.png", width: 40, height: 40, alt: '' },
-  { value: "image12", src: "/images/image1.png", width: 40, height: 40, alt: '' },
-  { value: "image12", src: "/images/image1.png", width: 40, height: 40, alt: '' },
-];
