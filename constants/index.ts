@@ -54,11 +54,11 @@ export const navElements = [
     value: "delete",
     name: "Delete",
   },
-  {
-    icon: "/assets/sticker.png",
-    value: "sticker",
-    name: "Sticker",
-  },
+  // {
+  //   icon: "/assets/sticker.png",
+  //   value: "sticker",
+  //   name: "Sticker",
+  // },
   // {
   //   icon: "/assets/reset.svg",
   //   value: "reset",
