@@ -34,7 +34,7 @@ export default async function Index() {
             </Link>
           </div>
           <div className="flex flex-col gap-4 border-4 border-b-8 border-[#4FFF14] shadow-lg p-4 bg-white rounded-md transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2 min-w-56">
-            <Image src="/playtonium.gif" alt={""} width={200} height={200} unoptimized  
+            <Image src="/Playgotchi-cards.gif" alt={""} width={200} height={200} unoptimized  
             />
             <h3 className="text-teal-900 text-center typewriter font-bold">Playgotchi</h3>
             <Link href={"/"} target="_blank" rel="noopener noreferrer">
@@ -42,7 +42,7 @@ export default async function Index() {
             </Link>
           </div>
           <div className="flex flex-col gap-4 border-4 border-b-8 border-yellow-500 shadow-lg p-4 bg-white rounded-md transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2 min-w-56">
-            <Image src="/yellow-collective.png" alt={"Yellow Collective"} width={200} height={200}       
+            <Image src="/Collective-Nouns.gif" alt={"Yellow Collective"} width={200} height={200}  unoptimized      
             />
             <h3 className="text-teal-900 text-center typewriter font-bold">Collective Nouns</h3>
             <Link href={"https://zora.co/@basedandyellow/"} target="_blank" rel="noopener noreferrer">
