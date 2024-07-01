@@ -207,7 +207,7 @@ const Live = ({ canvasRef, undo, redo }: Props) => {
   return (
     <ContextMenu>
       <ContextMenuTrigger
-        className="relative flex h-full w-full flex-1 items-center justify-center"
+        className="relative flex h-full w-full flex-1 items-center justify-center overflow-scroll"
         id="canvas"
         style={{
           cursor: cursorState.mode === CursorMode.Chat ? "none" : "auto",

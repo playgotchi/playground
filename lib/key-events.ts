@@ -93,43 +93,40 @@ export const handleKeyDown = ({
   syncShapeInStorage: (shape: fabric.Object) => void;
   deleteShapeFromStorage: (id: string) => void;
 }) => {
+  const activeElement = document.activeElement;
+  const isInputField = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable);
+
   if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
     e.preventDefault();
     handleCopy(canvas);
   }
 
-  // Check if the key pressed is ctrl/cmd + v (paste)
   if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
     e.preventDefault();
     handlePaste(canvas, syncShapeInStorage);
   }
 
-  // Check if the key pressed is delete/backspace (delete)
-  if (e.key === 'Delete' || e.key === 'Backspace') {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && !isInputField) {
     e.preventDefault();
     handleDelete(canvas, deleteShapeFromStorage);
   }
 
-  // Check if the key pressed is ctrl/cmd + x (cut)
   if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
     e.preventDefault();
     handleCopy(canvas);
     handleDelete(canvas, deleteShapeFromStorage);
   }
 
-  // Check if the key pressed is ctrl/cmd + z (undo)
   if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
     e.preventDefault();
     undo();
   }
 
-  // Check if the key pressed is ctrl/cmd + y (redo)
   if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
     e.preventDefault();
     redo();
   }
 
-  // Prevent default for '?' key
   if (e.key === '/' && !e.shiftKey) {
     e.preventDefault();
   }

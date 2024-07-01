@@ -27,9 +27,11 @@ export default function Header() {
               <Button variant={'primary'}>Dashboard</Button>
             </Link>
           )}
-          <Hint side="left" label={"Login with email or Farcaster is enabled for allowlisted emails and FIDs"}>
-            <Info size={24} />
+          {!isLoggedIn && (
+            <Hint side="left" label={"Login with email or Farcaster is enabled for allowlisted emails and FIDs"}>
+              <Info size={24} />
           </Hint>
+          )}
           <DynamicWidget />
       </div>
       </div>
