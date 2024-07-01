@@ -7,6 +7,7 @@
   },
   "homepage": "https://updatethisurl.com",
   "scripts": {
+    "preinstall": "npx npm-force-resolutions",
     "dev": "next dev",
     "build": "next build",
     "start": "next start"
@@ -19,8 +20,8 @@
   ],
   "dependencies": {
     "@auth/unstorage-adapter": "^2.0.0",
-    "@dynamic-labs/ethereum": "^2.2.4",
-    "@dynamic-labs/sdk-react-core": "^2.2.4",
+    "@dynamic-labs/ethereum": "^2.2.6",
+    "@dynamic-labs/sdk-react-core": "^2.2.7",
     "@dynamic-labs/wagmi-connector": "^2.2.7",
     "@liveblocks/client": "^2.0.5",
     "@liveblocks/react": "^2.0.5",
@@ -72,11 +73,15 @@
     "@types/react-dom": "^18.2.8",
     "@types/uuid": "^9.0.8",
     "autoprefixer": "^10.4.15",
+    "npm-force-resolutions": "^0.0.3",
     "postcss": "^8.4.29",
     "prettier": "^3.2.4",
     "prettier-plugin-tailwindcss": "^0.5.11",
     "tailwindcss": "^3.3.3",
     "typescript": "5.5.2"
+  },
+  "resolutions": {
+    "@dynamic-labs/logger": "2.2.7"
   },
   "engines": {
     "node": ">=20.0.0"
