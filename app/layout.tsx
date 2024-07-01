@@ -1,7 +1,8 @@
 import "./globals.css"
 import type { Metadata } from "next"
 import { Fragment_Mono } from "next/font/google"
-import ProviderWrapper from "@/components/dynamic-wrapper"
+import { DynamicContextProvider, DynamicWagmiConnector } from "../lib/dynamic";
+import { Providers } from "./WagmiProvider";
 
 const fragment = Fragment_Mono({
   subsets: ["latin"],
@@ -14,14 +15,22 @@ export const metadata: Metadata = {
     "Welcome to Playground by Playgotchi where communites play together",
 }
 
-export default function RootLayout({ children }: React.PropsWithChildren) {
-  return (
-    <html lang="en">
-      <ProviderWrapper>
-        <body className={fragment.className}>
-          {children}
-        </body>
-      </ProviderWrapper>
-    </html>
-  )
+export default function RootLayout({ children }: {
+    children: React.ReactNode;
+    }) {
+    return (
+        <html lang="en">
+        <DynamicContextProvider
+            settings={{
+            environmentId: "XXXXX",
+            }}
+        >
+            <Providers>
+            <DynamicWagmiConnector>
+                <body className={fragment.className}>{children}</body>
+            </DynamicWagmiConnector>
+            </Providers>
+        </DynamicContextProvider>
+        </html>
+    );
 }
