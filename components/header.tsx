@@ -3,6 +3,8 @@ import { DynamicWidget, useIsLoggedIn } from "@/lib/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "./ui/button";
+import { Info } from "lucide-react";
+import { Hint } from "./hint";
 
 export default function Header() {
   const isLoggedIn = useIsLoggedIn();
@@ -25,6 +27,9 @@ export default function Header() {
               <Button variant={'primary'}>Dashboard</Button>
             </Link>
           )}
+          <Hint side="left" label={"Login with email or Farcaster is enabled for allowlisted emails and FIDs"}>
+            <Info size={24} />
+          </Hint>
           <DynamicWidget />
       </div>
       </div>

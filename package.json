@@ -5,7 +5,7 @@
   "bugs": {
     "url": "https://github.com/playgotchi/playground/issues"
   },
-  "homepage": "https://updatethisurl.com",
+  "homepage": "https://playground.playgotchi.com/",
   "scripts": {
     "dev": "next",
     "build": "next build",
