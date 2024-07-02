@@ -12,34 +12,24 @@ import { useRef } from 'react';
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
 
 const uploadToIPFS = async (blob: Blob): Promise<string> => {
-  try {
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-    return new Promise((resolve, reject) => {
-      reader.onloadend = async () => {
-        const base64data = typeof reader.result === 'string' ? reader.result.split(',')[1] : '';
-        try {
-          const response = await fetch('/api/upload-to-ipfs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: base64data, filename: 'playground.png' }),
-          });
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const { ipfsHash } = await response.json();
-          console.log("IPFS Upload Response:", ipfsHash);
-          resolve(ipfsHash);
-        } catch (error) {
-          console.error("Error in IPFS upload:", error);
-          reject(error);
-        }
-      };
-    });
-  } catch (error) {
-    console.error("Error in uploadToIPFS:", error);
-    throw error;
-  }
+  const reader = new FileReader();
+  reader.readAsDataURL(blob);
+  return new Promise((resolve, reject) => {
+    reader.onloadend = async () => {
+      const base64data = typeof reader.result === 'string' ? reader.result.split(',')[1] : '';
+      try {
+        const response = await fetch('/api/upload-to-ipfs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: base64data, filename: 'playground.png' }),
+        });
+        const { ipfsHash } = await response.json();
+        resolve(ipfsHash);
+      } catch (error) {
+        reject(error);
+      }
+    };
+  });
 };
 
 const createMetadata = (imageHash: string) => ({
