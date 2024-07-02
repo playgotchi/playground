@@ -21,7 +21,7 @@
     "@auth/unstorage-adapter": "^2.0.0",
     "@dynamic-labs/ethereum": "^2.2.4",
     "@dynamic-labs/sdk-react-core": "^2.2.4",
-    "@dynamic-labs/wagmi-connector": "^2.2.8",
+    "@dynamic-labs/wagmi-connector": "^2.2.6",
     "@liveblocks/client": "^2.0.5",
     "@liveblocks/react": "^2.0.5",
     "@liveblocks/react-ui": "^2.0.5",
