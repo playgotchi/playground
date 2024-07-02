@@ -1,7 +1,7 @@
 "use client";
 
 import { fabric } from "fabric";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useImperativeHandle } from "react";
 
 import { useMutation, useRedo, useStorage, useUndo } from "@liveblocks/react/suspense";
 import {
@@ -26,8 +26,13 @@ import { ActiveElement, Attributes } from "@/types/type";
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
+import { forwardRef } from "react";
 
-const CanvasComponent = () => {
+export type CanvasRef = {
+  captureCanvas: () => string | null;
+};
+
+const CanvasComponent = forwardRef<CanvasRef, {}>((props, ref) => {
 
   const undo = useUndo();
   const redo = useRedo();
@@ -70,6 +75,19 @@ const CanvasComponent = () => {
     fill: "#aabbcc",
     stroke: "#aabbcc",
   });
+
+  // Add useImperativeHandle to expose captureCanvas method
+  useImperativeHandle(ref, () => ({
+    captureCanvas: () => {
+      if (fabricRef.current) {
+        return fabricRef.current.toDataURL({
+          format: 'png',
+          quality: 1
+        });
+      }
+      return null;
+    }
+  }))
 
   const deleteShapeFromStorage = useMutation(({ storage }, shapeId) => {
    
@@ -327,7 +345,8 @@ const CanvasComponent = () => {
         />
       </section>
     </main>
-  );
-};
+    );
+});
+
 
 export default CanvasComponent;
