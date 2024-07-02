@@ -9,9 +9,9 @@ const fragment = Fragment_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Playground by Playgocthi",
+  title: "Playground by Playgotchi",
   description:
-    "Welcome to Playground by Playgotchi where communites play together",
+    "Welcome to Playground by Playgotchi where communities play together",
 }
 
 export default function RootLayout({ children }: React.PropsWithChildren) {
