@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
-import { useAccount, useConnect, useDisconnect, useSignMessage, useChainId } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, useChainId } from 'wagmi';
 import { BaseError, Address } from "viem";
 import { useSimulateContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { zoraNftCreatorV1Config } from "@zoralabs/zora-721-contracts";
-import { baseSepolia } from 'wagmi/chains';
+import { base } from 'wagmi/chains';
 
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
 
@@ -58,19 +58,17 @@ const createMetadata = (imageHash: string) => ({
 export const useMintToken = () => {
   const { address } = useAccount();
   const chainId = useChainId();
-  const { signMessage } = useSignMessage();
 
   const [isMinting, setIsMinting] = useState(false);
   const [metadataUri, setMetadataUri] = useState<string | null>(null);
   const [mintingStep, setMintingStep] = useState<string>('');
-
-  const { data: simulateData, error: simulateError } = useSimulateContract({
-    address: zoraNftCreatorV1Config.address[baseSepolia.id] as Address,
+const { data: simulateData, error: simulateError } = useSimulateContract({
+    address: zoraNftCreatorV1Config.address[base.id] as Address,
     abi: zoraNftCreatorV1Config.abi,
-    functionName: "createEdition",
+    functionName: "createEditionWithReferral",
     args: [
-      "Whiteboard Capture", // name
-      "WBC", // symbol
+      "Playgotchi Playground Capture", // name
+      "PPC", // symbol
       BigInt(1), // editionSize
       0, // royaltyBPS
       address!, // fundsRecipient
@@ -84,8 +82,9 @@ export const useMintToken = () => {
         presaleEnd: BigInt(0),
         presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
       },
-      "A captured whiteboard session", // description
-      "", // animationUri (we're not using this, so passing an empty string)
+      "Playground Powered by Playgotchi", // description
+      "", // 
+      address!, // owner
       "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
 
     ],
@@ -102,8 +101,8 @@ export const useMintToken = () => {
       throw new Error('Wallet not connected');
     }
 
-    if (chainId !== baseSepolia.id) {
-      throw new Error('Please switch to Base Sepolia network');
+    if (chainId !== base.id) {
+      throw new Error('Please switch to Base network');
     }
 
     setIsMinting(true);
@@ -126,13 +125,8 @@ export const useMintToken = () => {
 
       setMetadataUri(`ipfs://${metadataHash}`);
 
-      setMintingStep('Signing confirmation message...');
-      const signatureMessage = `Confirm minting of Whiteboard NFT with metadata: ${metadataHash}`;
-      await signMessage({ message: signatureMessage });
-
-      setMintingStep('Simulating contract interaction...');
+      setMintingStep('Minting NFT...');
       if (simulateData?.request) {
-        setMintingStep('Minting NFT...');
         await writeContract(simulateData.request);
       } else {
         throw new Error('Failed to simulate contract interaction');
@@ -156,8 +150,7 @@ export const useMintToken = () => {
   };
 };
 
-
-const MintNFT: React.FC = () => {
+const MintToken: React.FC = () => {
   const [whiteboardImage, setWhiteboardImage] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
@@ -182,8 +175,8 @@ const MintNFT: React.FC = () => {
       return;
     }
 
-    if (chainId !== baseSepolia.id) {
-      setErrorMessage('Please switch to Base Sepolia network');
+    if (chainId !== base.id) {
+      setErrorMessage('Please switch to Base network');
       return;
     }
 
@@ -212,14 +205,13 @@ const MintNFT: React.FC = () => {
     }
   }, [isError, error]);
 
-
   return (
     <div className="mint-nft-container">
       <h2>Mint Your Whiteboard NFT</h2>
       {isConnected ? (
         <div className="wallet-info">
           <p>Connected address: {address}</p>
-          <p>Network: {chainId === baseSepolia.id ? 'Base Sepolia' : 'Wrong Network'}</p>
+          <p>Network: {chainId === base.id ? 'Base' : 'Wrong Network'}</p>
           <button onClick={() => disconnect()} className="disconnect-button">Disconnect</button>
         </div>
       ) : (
@@ -236,7 +228,7 @@ const MintNFT: React.FC = () => {
         </button>
       )}
 
-<div id="whiteboard" className="whiteboard">
+      <div id="whiteboard" className="whiteboard">
         {/* Your whiteboard content here */}
         <p>Your whiteboard content goes here</p>
       </div>
@@ -252,7 +244,7 @@ const MintNFT: React.FC = () => {
 
       <button 
         onClick={handleMint} 
-        disabled={!isConnected || isMinting || isPending || chainId !== baseSepolia.id}
+        disabled={!isConnected || isMinting || isPending || chainId !== base.id}
         className="mint-button"
       >
         {isMinting ? mintingStep : 'Mint NFT'}
@@ -269,4 +261,4 @@ const MintNFT: React.FC = () => {
   );
 };
 
-export default MintNFT;
+export default MintToken;

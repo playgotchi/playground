@@ -7,7 +7,7 @@
   },
   "homepage": "https://playground.playgotchi.com/",
   "scripts": {
-    "dev": "next",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start"
   },
