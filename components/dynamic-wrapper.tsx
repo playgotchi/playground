@@ -2,28 +2,19 @@
 
 import { getCsrfToken, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import {
-  DynamicContextProvider,
-  DynamicWidget,
-} from "@dynamic-labs/sdk-react-core";
+import { DynamicContextProvider, DynamicWidget } from "@dynamic-labs/sdk-react-core";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 import { DynamicWagmiConnector } from "@dynamic-labs/wagmi-connector";
-import {
-  createConfig,
-  WagmiProvider,
-  useAccount,
-} from "wagmi";
+import { createConfig, WagmiProvider, useAccount } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http } from "viem";
-import { mainnet, optimism, base } from "viem/chains";
+import {  baseSepolia } from "viem/chains";
 
 const config = createConfig({
-  chains: [mainnet, optimism, base],
+  chains: [ baseSepolia ],
   multiInjectedProviderDiscovery: false,
   transports: {
-    [mainnet.id]: http(),
-    [optimism.id]: http(),
-    [base.id]: http(),
+    [baseSepolia.id]: http(),
   },
 });
 
