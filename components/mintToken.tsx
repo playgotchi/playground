@@ -12,24 +12,34 @@ import { useRef } from 'react';
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
 
 const uploadToIPFS = async (blob: Blob): Promise<string> => {
-  const reader = new FileReader();
-  reader.readAsDataURL(blob);
-  return new Promise((resolve, reject) => {
-    reader.onloadend = async () => {
-      const base64data = typeof reader.result === 'string' ? reader.result.split(',')[1] : '';
-      try {
-        const response = await fetch('/api/upload-to-ipfs', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: base64data, filename: 'playground.png' }),
-        });
-        const { ipfsHash } = await response.json();
-        resolve(ipfsHash);
-      } catch (error) {
-        reject(error);
-      }
-    };
-  });
+  try {
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    return new Promise((resolve, reject) => {
+      reader.onloadend = async () => {
+        const base64data = typeof reader.result === 'string' ? reader.result.split(',')[1] : '';
+        try {
+          const response = await fetch('/api/upload-to-ipfs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: base64data, filename: 'playground.png' }),
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const { ipfsHash } = await response.json();
+          console.log("IPFS Upload Response:", ipfsHash);
+          resolve(ipfsHash);
+        } catch (error) {
+          console.error("Error in IPFS upload:", error);
+          reject(error);
+        }
+      };
+    });
+  } catch (error) {
+    console.error("Error in uploadToIPFS:", error);
+    throw error;
+  }
 };
 
 const createMetadata = (imageHash: string) => ({
@@ -94,10 +104,16 @@ export const useMintToken = () => {
     try {
       const response = await fetch(canvasDataURL);
       const blob = await response.blob();
+      console.log("Blob size:", blob.size);
+
 
       setMintingStep('Uploading image to IPFS...');
       const imageHash = await uploadToIPFS(blob);
       console.log(`Pinned image to IPFS: ${imageHash}`);
+
+      if (!imageHash) {
+        throw new Error('Failed to upload image to IPFS');
+      }
 
       setMintingStep('Creating metadata...');
       const metadata = createMetadata(imageHash);
@@ -114,6 +130,7 @@ export const useMintToken = () => {
       } else {
         throw new Error('Failed to simulate contract interaction');
       }
+      console.log(`IPFS Image URL: https://gateway.pinata.cloud/ipfs/${imageHash}`);
     } catch (error) {
       console.error('Error minting token:', error);
       throw error;
@@ -157,23 +174,25 @@ const MintToken: React.FC = () => {
       setErrorMessage('Please connect your wallet first');
       return;
     }
-
+  
     if (chainId !== base.id) {
       setErrorMessage('Please switch to Base network');
       return;
     }
-
+  
     try {
       const canvasDataURL = canvasRef.current?.captureCanvas();
+      console.log("Canvas Data URL:", canvasDataURL?.slice(0, 100) + "..."); // Log first 100 chars
       if (!canvasDataURL) {
         throw new Error('Failed to capture canvas');
       }
-
+  
       await mintToken(canvasDataURL);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'An unknown error occurred');
     }
   };
+  
 
   useEffect(() => {
     if (isError && error) {
