@@ -18,7 +18,7 @@ const MintButton: React.FC = () => {
         onClick={handleMint}
         disabled={isMinting || isPending}
       >
-        {isMinting || isPending ? 'Minting...' : 'Mint Button'}
+        {isMinting || isPending ? 'Minting...' : 'Mint'}
       </Button>
       {isSuccess && <p className="text-green-500 mt-2">Token minted successfully!</p>}
       {isError && <p className="text-red-500 mt-2">Error: {error}</p>}
