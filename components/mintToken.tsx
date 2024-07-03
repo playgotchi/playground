@@ -7,25 +7,30 @@ import { useSimulateContract, useWriteContract, useWaitForTransactionReceipt } f
 import { zoraNftCreatorV1Config } from "@zoralabs/zora-721-contracts";
 import { base } from 'wagmi/chains';
 import html2canvas from 'html2canvas';
+import { captureCanvas } from '@/lib/canvasCapture';
+
 
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
 
-const captureWhiteboard = async (elementId: string): Promise<Blob | null> => {
-  const whiteboardElement = document.querySelector('main');
-  if (!whiteboardElement) {
-    throw new Error('Whiteboard element not found');
-  }
+// mintToken.tsx
 
-  const canvas = await html2canvas(whiteboardElement);
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      if (blob) {
-        resolve(blob);
-      } else {
-        resolve(null);
-      }
-    }, 'image/png');
-  });
+
+const captureWhiteboard = async (): Promise<Blob | null> => {
+  try {
+    const canvas = await captureCanvas('main');
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          resolve(null);
+        }
+      }, 'image/png');
+    });
+  } catch (error) {
+    console.error('Error capturing whiteboard:', error);
+    return null;
+  }
 };
 
 const uploadToIPFS = async (blob: Blob): Promise<string> => {
@@ -115,7 +120,7 @@ export const useMintToken = () => {
     setMintingStep('Capturing canvas...');
 
     try {
-      const blob = await captureWhiteboard('main');
+      const blob = await captureWhiteboard();
       if (!blob) throw new Error('Failed to capture whiteboard');
       console.log("Blob size:", blob.size);
 
@@ -207,7 +212,7 @@ const MintToken: React.FC = () => {
 
   const handleCaptureWhiteboard = async () => {
     try {
-      const blob = await captureWhiteboard('whiteboard');
+      const blob = await captureWhiteboard();
       if (blob) {
         setWhiteboardImage(URL.createObjectURL(blob));
       }
