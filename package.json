@@ -22,7 +22,6 @@
     "@dynamic-labs/ethereum": "^2.2.4",
     "@dynamic-labs/sdk-react-core": "^2.2.4",
     "@liveblocks/client": "^2.0.5",
-    "@liveblocks/node": "^2.1.0",
     "@liveblocks/react": "^2.0.5",
     "@liveblocks/react-ui": "^2.0.5",
     "@radix-ui/react-avatar": "^1.0.3",
