@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useRef, useState, useEffect } from 'react';
 import { fabric } from "fabric";
 import { useMutation, useRedo, useStorage, useUndo } from "@liveblocks/react/suspense";
