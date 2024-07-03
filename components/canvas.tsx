@@ -13,7 +13,6 @@ import html2canvas from 'html2canvas';
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
-import { captureCanvas } from '@/lib/canvasCapture';
 
 
 const CanvasComponent = () => {
@@ -319,26 +318,24 @@ const CanvasComponent = () => {
     });
   }, [canvasObjects]);
 
+  const exportWhiteboard = async () => {
+    setIsExporting(true);
+    try {
+      const imageDataUrl = await captureWhiteboard();
 
-const exportWhiteboard = async () => {
-  setIsExporting(true);
-  try {
-    const canvas = await captureCanvas('main');
-    const imageDataUrl = canvas.toDataURL('image/png');
-    
-    const link = document.createElement('a');
-    link.href = imageDataUrl;
-    link.download = 'whiteboard-export.png';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (error) {
-    console.error('Failed to export whiteboard:', error);
-    alert('Failed to export whiteboard. Please try again.');
-  } finally {
-    setIsExporting(false);
-  }
-};
+      const link = document.createElement('a');
+      link.href = imageDataUrl;
+      link.download = 'whiteboard-export.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Failed to export whiteboard:', error);
+      alert('Failed to export whiteboard. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <main className='h-screen overflow-hidden'>
