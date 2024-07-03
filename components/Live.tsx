@@ -217,7 +217,7 @@ const Live = ({ canvasRef, undo, redo }: Props) => {
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
       >
-        <canvas ref={canvasRef} id="whiteboard-element" />
+        <canvas ref={canvasRef} id="whiteboard" />
 
         {/* Render the reactions */}
         {reactions.map((reaction: { timestamp: number; point: { x: number; y: number; }; value: string; }) => (

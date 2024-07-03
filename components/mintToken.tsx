@@ -193,7 +193,7 @@ const MintToken: React.FC = () => {
     }
   
     try {
-      await mintToken('whiteboard');
+      await mintToken('canvas');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'An unknown error occurred');
     }
