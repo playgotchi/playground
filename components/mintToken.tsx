@@ -1,15 +1,32 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useAccount, useConnect, useDisconnect, useChainId } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, useChainId, useSignMessage } from 'wagmi';
 import { BaseError, Address } from "viem";
 import { useSimulateContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { zoraNftCreatorV1Config } from "@zoralabs/zora-721-contracts";
-import CanvasComponent, { CanvasRef } from './canvas'; // Adjust the import path as needed
 import { base } from 'wagmi/chains';
-import { useRef } from 'react';
+import html2canvas from 'html2canvas';
 
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
+
+const captureWhiteboard = async (elementId: string): Promise<Blob | null> => {
+  const whiteboardElement = document.getElementById(elementId);
+  if (!whiteboardElement) {
+    throw new Error('Whiteboard element not found');
+  }
+
+  const canvas = await html2canvas(whiteboardElement);
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        resolve(null);
+      }
+    }, 'playground/png');
+  });
+};
 
 const uploadToIPFS = async (blob: Blob): Promise<string> => {
   const reader = new FileReader();
@@ -34,9 +51,8 @@ const uploadToIPFS = async (blob: Blob): Promise<string> => {
 
 const createMetadata = (imageHash: string) => ({
   name: "Playground Capture",
-  description: "A captured Playground session",
-  image: `ipfs://${imageHash}`
-});
+  description: "Made with Playground by Playgotchi (https://playground.playgotchi.com/)",
+  image: `ipfs://${imageHash}` });
 
 export const useMintToken = () => {
   const { address } = useAccount();
@@ -45,18 +61,19 @@ export const useMintToken = () => {
   const [isMinting, setIsMinting] = useState(false);
   const [metadataUri, setMetadataUri] = useState<string | null>(null);
   const [mintingStep, setMintingStep] = useState<string>('');
-  
+  const { signMessage } = useSignMessage(); 
+
   const { data: simulateData, error: simulateError } = useSimulateContract({
     address: zoraNftCreatorV1Config.address[base.id] as Address,
     abi: zoraNftCreatorV1Config.abi,
     functionName: "createEditionWithReferral",
     args: [
-      "Playgotchi Playground Capture", // name
-      "PPC", // symbol
+      "Playground Pic", // name
+      "PP", // symbol
       BigInt(1), // editionSize
-      0, // royaltyBPS
+      3, // royaltyBPS
       address!, // fundsRecipient
-      "0x0000000000000000000000000000000000000000", // defaultAdmin
+      address!, // defaultAdmin
       {
         publicSalePrice: BigInt(0),
         maxSalePurchasePerAddress: 1,
@@ -66,7 +83,7 @@ export const useMintToken = () => {
         presaleEnd: BigInt(0),
         presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
       },
-      "Playground Powered by Playgotchi", // description
+      "Made with Playground by Playgotchi (https://playground.playgotchi.com/)", // description
       "", // animationURL or URI
       address!, // owner
       "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
@@ -79,7 +96,7 @@ export const useMintToken = () => {
     hash: writeData,
   });
 
-  const mintToken = async (canvasDataURL: string) => {
+  const mintToken = async (elementId: string) => {
     if (!address) {
       throw new Error('Wallet not connected');
     }
@@ -92,8 +109,8 @@ export const useMintToken = () => {
     setMintingStep('Capturing canvas...');
 
     try {
-      const response = await fetch(canvasDataURL);
-      const blob = await response.blob();
+      const blob = await captureWhiteboard(elementId);
+      if (!blob) throw new Error('Failed to capture whiteboard');
       console.log("Blob size:", blob.size);
 
 
@@ -114,12 +131,17 @@ export const useMintToken = () => {
 
       setMetadataUri(`ipfs://${metadataHash}`);
 
-      setMintingStep('Minting NFT...');
-      if (simulateData?.request) {
-        await writeContract(simulateData.request);
-      } else {
-        throw new Error('Failed to simulate contract interaction');
-      }
+      setMintingStep('Signing confirmation message...');
+      const signatureMessage = `Confirm minting of Playground NFT ${metadataHash}`;
+      await signMessage({ message: signatureMessage });
+
+      setMintingStep('Interacting with smart contract...');
+        if (simulateData?.request) {
+          setMintingStep('Minting NFT...');
+          await writeContract(simulateData.request);
+        } else {
+          throw new Error('Failed to interact with smart contract ');
+        }
       console.log(`IPFS Image URL: https://gateway.pinata.cloud/ipfs/${imageHash}`);
     } catch (error) {
       console.error('Error minting token:', error);
@@ -141,7 +163,7 @@ export const useMintToken = () => {
 };
 
 const MintToken: React.FC = () => {
-  const canvasRef = useRef<CanvasRef>(null); // Specify the type CanvasRef
+  const [whiteboardImage, setWhiteboardImage] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   const { address, isConnected } = useAccount();
@@ -171,18 +193,23 @@ const MintToken: React.FC = () => {
     }
   
     try {
-      const canvasDataURL = canvasRef.current?.captureCanvas();
-      console.log("Canvas Data URL:", canvasDataURL?.slice(0, 100) + "..."); // Log first 100 chars
-      if (!canvasDataURL) {
-        throw new Error('Failed to capture canvas');
-      }
-  
-      await mintToken(canvasDataURL);
+      await mintToken('whiteboard');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'An unknown error occurred');
     }
   };
-  
+
+  const handleCaptureWhiteboard = async () => {
+    try {
+      const blob = await captureWhiteboard('whiteboard');
+      if (blob) {
+        setWhiteboardImage(URL.createObjectURL(blob));
+      }
+    } catch (error) {
+      console.error('Error capturing whiteboard:', error);
+      setErrorMessage('Failed to capture whiteboard');
+    }
+  };
 
   useEffect(() => {
     if (isError && error) {
@@ -213,7 +240,14 @@ const MintToken: React.FC = () => {
         </button>
       )}
 
-      <CanvasComponent ref={canvasRef} />
+<button onClick={handleCaptureWhiteboard} className="capture-button">Capture Whiteboard</button>
+
+      {whiteboardImage && (
+        <div className="preview">
+          <h3>Preview</h3>
+          <img src={whiteboardImage} alt="Whiteboard Capture" style={{ maxWidth: '100%' }} />
+        </div>
+      )}
 
       <button 
         onClick={handleMint} 

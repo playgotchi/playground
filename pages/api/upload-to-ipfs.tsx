@@ -1,13 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import pinataSDK from '@pinata/sdk';
 import { Readable } from 'stream';
-import path from 'path';
-import { config } from 'dotenv';
 
 // Load environment variables
-config({ path: path.resolve(__dirname, '.env.local') });
+const pinataApiKey = process.env.PINATA_API_KEY;
+const pinataSecretApiKey = process.env.PINATA_SECRET_API_KEY;
 
-const pinata = new pinataSDK(process.env.PINATA_API_KEY, process.env.PINATA_SECRET_API_KEY);
+const pinata = new pinataSDK(pinataApiKey, pinataSecretApiKey);
+
+// Rest of your code...
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
