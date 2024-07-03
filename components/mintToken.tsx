@@ -11,7 +11,7 @@ import html2canvas from 'html2canvas';
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
 
 const captureWhiteboard = async (elementId: string): Promise<Blob | null> => {
-  const whiteboardElement = document.getElementById('canvas');
+  const whiteboardElement = document.querySelector('main');
   if (!whiteboardElement) {
     throw new Error('Whiteboard element not found');
   }
@@ -40,9 +40,15 @@ const uploadToIPFS = async (blob: Blob): Promise<string> => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content: base64data, filename: 'playground.png' }),
         });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const { ipfsHash } = await response.json();
+        console.log('IPFS Upload Response:', ipfsHash);
+
         resolve(ipfsHash);
       } catch (error) {
+        console.error('Error in IPFS upload:', error);
         reject(error);
       }
     };
@@ -109,7 +115,7 @@ export const useMintToken = () => {
     setMintingStep('Capturing canvas...');
 
     try {
-      const blob = await captureWhiteboard(elementId);
+      const blob = await captureWhiteboard('main');
       if (!blob) throw new Error('Failed to capture whiteboard');
       console.log("Blob size:", blob.size);
 
