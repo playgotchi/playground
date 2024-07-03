@@ -11,7 +11,7 @@ import html2canvas from 'html2canvas';
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
 
 const captureWhiteboard = async (elementId: string): Promise<Blob | null> => {
-  const whiteboardElement = document.getElementById(elementId);
+  const whiteboardElement = document.getElementById('canvas');
   if (!whiteboardElement) {
     throw new Error('Whiteboard element not found');
   }
@@ -24,7 +24,7 @@ const captureWhiteboard = async (elementId: string): Promise<Blob | null> => {
       } else {
         resolve(null);
       }
-    }, 'playground/png');
+    }, 'image/png');
   });
 };
 
