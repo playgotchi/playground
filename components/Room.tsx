@@ -20,10 +20,9 @@ export const Room = ({
   roomId, 
   fallback,
  }: RoomProps) => {
-  const publicApiKey = process.env.NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY || "";
   return (
     <LiveblocksProvider
-      publicApiKey={publicApiKey}
+      authEndpoint="/api/liveblocks-auth"
     >
       <RoomProvider id={roomId} 
         initialPresence={{
