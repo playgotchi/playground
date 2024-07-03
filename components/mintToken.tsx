@@ -62,6 +62,8 @@ export const useMintToken = () => {
   const [isMinting, setIsMinting] = useState(false);
   const [metadataUri, setMetadataUri] = useState<string | null>(null);
   const [mintingStep, setMintingStep] = useState<string>('');
+
+  
 const { data: simulateData, error: simulateError } = useSimulateContract({
     address: zoraNftCreatorV1Config.address[base.id] as Address,
     abi: zoraNftCreatorV1Config.abi,

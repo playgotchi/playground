@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useMintToken } from '../mintToken';
 import { useAccount } from 'wagmi';
 import { base } from 'wagmi/chains';
@@ -7,6 +7,11 @@ import { base } from 'wagmi/chains';
 const MintButton: React.FC = () => {
   const { mintToken, isMinting, isPending, isSuccess, isError, error, mintingStep } = useMintToken();
   const { isConnected, chain } = useAccount();
+  const whiteboardRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    whiteboardRef.current = document.getElementById('main');
+  }, []);
 
   const handleMint = async () => {
     try {
@@ -14,7 +19,7 @@ const MintButton: React.FC = () => {
     } catch (err) {
       console.error('Minting failed:', err);
     }
-  };
+  }
 
   const isCorrectNetwork = chain?.id === base.id;
   const canMint = isConnected && isCorrectNetwork && !isMinting && !isPending;
