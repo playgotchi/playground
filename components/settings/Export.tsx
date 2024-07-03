@@ -6,7 +6,7 @@ const MintButton: React.FC = () => {
   const { mintToken, isMinting, isPending, isSuccess, isError, error } = useMintToken();
 
   const handleMint = () => {
-    const canvasElement = document.getElementById('whiteboard-element') as HTMLCanvasElement;
+    const canvasElement = document.getElementById('canvas') as HTMLCanvasElement;
 
     if (canvasElement) {
       canvasElement.toBlob((blob: Blob | null) => {
