@@ -18,6 +18,9 @@ import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
 
+const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
+ 
+
 const CanvasComponent = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -182,22 +185,25 @@ const CanvasComponent = () => {
     };
 
     const uploadToIPFS = async (blob: Blob): Promise<string> => {
-        const formData = new FormData();
-        formData.append('file', blob);
-        
-        const response = await fetch('/api/upload-to-ipfs', {
-            method: 'POST',
-            body: formData,
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        return new Promise((resolve, reject) => {
+          reader.onloadend = async () => {
+            const base64data = typeof reader.result === 'string' ? reader.result.split(',')[1] : '';
+            try {
+              const response = await fetch('/api/upload-to-ipfs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: base64data, filename: 'playground.png' }),
+              });
+              const { ipfsHash } = await response.json();
+              resolve(ipfsHash);
+            } catch (error) {
+              reject(error);
+            }
+          };
         });
-        
-        if (!response.ok) {
-            throw new Error('Failed to upload to IPFS');
-        }
-        
-        const { ipfsHash } = await response.json();
-        return ipfsHash;
-    };
-
+      };
     const createMetadata = (imageHash: string) => ({
         name: "Playground Capture",
         description: "A captured Playground session",
