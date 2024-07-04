@@ -18,6 +18,13 @@ import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
 
+import {  zoraCreator1155FactoryImplAddress, zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
+import { erc721DropABI } from "@zoralabs/zora-721-contracts";
+
+  // get addresses contracts are deployed on the Zora chain
+  const zoraCreator1155FactoryImplAddressOnBase =
+  zoraCreator1155FactoryImplAddress[base.id];
+
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
  
 
@@ -57,33 +64,6 @@ const CanvasComponent = () => {
     const { address } = useAccount();
     const chainId = useChainId();
     const { writeContract } = useWriteContract();
-
-    const { data: simulateData, error: simulateError } = useSimulateContract({
-      address: zoraNftCreatorV1Config.address[base.id], 
-      abi: zoraNftCreatorV1Config.abi,
-      functionName: "createEditionWithReferral",
-      args: [
-          "Playground Pic",
-          "PP",
-          BigInt(1),
-          0,
-          address!,
-          address!,
-          {
-              publicSalePrice: BigInt(0),
-              maxSalePurchasePerAddress: 1,
-              publicSaleStart: BigInt(0),
-              publicSaleEnd: BigInt("0xFFFFFFFFFFFFFFFF"),
-              presaleStart: BigInt(0),
-              presaleEnd: BigInt(0),
-              presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
-          },
-          "Playground Powered by Playgotchi",
-          "",
-          address!,
-          "0x124F3eB5540BfF243c2B57504e0801E02696920E",
-      ],
-  });
   
     const deleteShapeFromStorage = useMutation(({ storage }, shapeId) => {
         const canvasObjects = storage.get("canvasObjects");
@@ -211,57 +191,43 @@ const CanvasComponent = () => {
     });
 
     const handleMint = async () => {
-        if (!capturedImage) {
-            alert('Please capture the whiteboard before minting.');
-            return;
-        }
-
-        if (!address) {
-            alert('Please connect your wallet');
-            return;
-        }
-
-        if (chainId !== base.id) {
-            alert('Please switch to Base network');
-            return;
-        }
-
         setIsMinting(true);
-        setMintingStep('Preparing image...');
-        setMintingError(null);
-        setMintingSuccess(false);
-
+        setMintingStep('Simulating');
+      
         try {
-            const response = await fetch(capturedImage);
-            const blob = await response.blob();
-
-            setMintingStep('Uploading image to IPFS...');
-            const imageHash = await uploadToIPFS(blob);
-            console.log(`Pinned image to IPFS: ${imageHash}`);
-
-            setMintingStep('Creating metadata...');
-            const metadata = createMetadata(imageHash);
-            const metadataContent = JSON.stringify(metadata);
-            const metadataBlob = new Blob([metadataContent], { type: 'application/json' });
-            const metadataHash = await uploadToIPFS(metadataBlob);
-            console.log(`Pinned metadata to IPFS: ${metadataHash}`); 
-
-            setMintingStep('Minting NFT...');
-            if (simulateData?.request) {
-                await writeContract(simulateData.request);
-                setMintingSuccess(true);
-            } else {
-                throw new Error('Failed to simulate contract interaction');
-            }
+          setMintingStep('Writing contract');
+      
+          // Check if address is defined
+          if (address) {
+            await writeContract({
+              abi: zoraCreator1155ImplABI,
+              address: zoraCreator1155FactoryImplAddress[8453],
+              functionName: 'mintWithRewards',
+              args: [
+                address, // Use the address from useAccount
+                1n, // Replace with desired mint quantity
+                0n,
+                address,
+                "0x124F3eB5540BfF243c2B57504e0801E02696920E", // Referral address
+              ],
+            });
+      
+            console.log("Transaction sent. Waiting for confirmation...");
+          } else {
+            console.error("Address is undefined");
+            // Handle the error appropriately here
+            // For example, you might want to set an error state or show a notification to the user
+          }
         } catch (error) {
-            console.error('Error minting token:', error);
-            setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
+          console.error("Error while minting:", error);
+          // Handle the error appropriately here
+          // For example, you might want to set an error state or show a notification to the user
         } finally {
-            setIsMinting(false);
-            setMintingStep('');
+          setIsMinting(false);
         }
-    };
-
+      };
+      
+      
     useEffect(() => {
         const canvas = initializeFabric({ canvasRef, fabricRef });
 
