@@ -65,7 +65,7 @@ const CanvasComponent = () => {
         abi: erc721DropABI,
         functionName: 'purchase',
         args: [1n], // quantity
-        value: parseEther('0'), // Adjust if there's a minting fee
+        value: parseEther('0.000777'), // Adjust if there's a minting fee
     });
 
     const { writeContract, data: writeData, error: writeError } = useWriteContract();
