@@ -74,6 +74,9 @@
   50% { border-color: transparent; }
 }
 
-.dynamic-widget-inline-controls {
-  cursor: url(/cursor-hover.png), auto;
-}
+.dynamic-shadow-dom {
+  --dynamic-connect-button-background: #4fff14;
+  --dynamic-connect-button-color: #000;
+  --dynamic-connect-button-background-hover: #2EA207;
+  --dynamic-connect-button-color-hover: #000;
+  }

@@ -16,7 +16,7 @@ export default function Header() {
           <Image
             src="/logo.png"
             alt={"Playground logo"}
-            width={240}
+            width={220}
             height={40}
             className="animate-pulse transition-all hover:cursor-py-cursor-hover active:cursor-py-cursor-press"
           />

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     description: "Welcome to Playground—where onchain communities play together.",
     images: [
       {
-        url: "https://playground.playgotchi.com/Playground-website.png",
+        url: "https://playground.playgotchi.com/playgotchi-social.png",
         width: 1200,
         height: 630,
         alt: "Playground by Playgotchi",
