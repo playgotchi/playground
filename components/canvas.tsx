@@ -238,7 +238,7 @@ const CanvasComponent = () => {
             const metadataContent = JSON.stringify(metadata);
             const metadataBlob = new Blob([metadataContent], { type: 'application/json' });
             const metadataHash = await uploadToIPFS(metadataBlob);
-            console.log(`Pinned metadata to IPFS: ${metadataHash}`);
+            console.log(`Pinned metadata to IPFS: ${metadataHash}`); 
 
             setMintingStep('Minting NFT...');
             if (simulateData?.request) {
