@@ -13,13 +13,14 @@ import { useAccount, useChainId } from 'wagmi';
 import { useSimulateContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { zoraNftCreatorV1Config } from "@zoralabs/zora-721-contracts";
 import { base } from 'wagmi/chains';
-
+import { useSignMessage } from 'wagmi';
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
 
 import {  zoraCreator1155FactoryImplAddress, zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
 import { erc721DropABI } from "@zoralabs/zora-721-contracts";
+import { Button } from './ui/button';
 
   // get addresses contracts are deployed on the Zora chain
   const zoraCreator1155FactoryImplAddressOnBase =
@@ -36,6 +37,7 @@ const CanvasComponent = () => {
     const [mintingStep, setMintingStep] = useState('');
     const [mintingError, setMintingError] = useState<string | null>(null);
     const [mintingSuccess, setMintingSuccess] = useState(false);
+
 
     const undo = useUndo();
     const redo = useRedo();
@@ -190,42 +192,40 @@ const CanvasComponent = () => {
         image: `ipfs://${imageHash}`
     });
 
+    const { signMessage } = useSignMessage();
+
     const handleMint = async () => {
-        setIsMinting(true);
-        setMintingStep('Simulating');
-      
-        try {
-          setMintingStep('Writing contract');
-      
-          // Check if address is defined
-          if (address) {
-            await writeContract({
-              abi: zoraCreator1155ImplABI,
-              address: zoraCreator1155FactoryImplAddress[8453],
-              functionName: 'mintWithRewards',
-              args: [
-                address, // Use the address from useAccount
-                1n, // Replace with desired mint quantity
-                0n,
-                address,
-                "0x124F3eB5540BfF243c2B57504e0801E02696920E", // Referral address
-              ],
-            });
-      
-            console.log("Transaction sent. Waiting for confirmation...");
-          } else {
-            console.error("Address is undefined");
-            // Handle the error appropriately here
-            // For example, you might want to set an error state or show a notification to the user
-          }
-        } catch (error) {
-          console.error("Error while minting:", error);
-          // Handle the error appropriately here
-          // For example, you might want to set an error state or show a notification to the user
-        } finally {
-          setIsMinting(false);
-        }
-      };
+      setIsMinting(true);
+      setMintingStep('Simulating');
+    
+      try {
+        setMintingStep('Writing contract');
+    
+        // Sign the message before minting
+        const signature = await signMessage({ message: 'Sign to confirm minting' });
+        
+        await writeContract({
+          abi: zoraCreator1155ImplABI,
+          address: address!,
+          functionName: 'mintWithRewards',
+          args: [
+          zoraCreator1155FactoryImplAddress[8453], // Replace with actual user address
+            1n, // Replace with desired mint quantity
+            1n, 
+            address!,
+            "0x124F3eB5540BfF243c2B57504e0801E02696920E", // Referral address
+          ],
+        });
+    
+        console.log("Transaction sent. Waiting for confirmation...");
+      } catch (error) {
+        console.error("Error while minting:", error);
+        // Handle the error appropriately here
+        // For example, you might want to set an error state or show a notification to the user
+      } finally {
+        setIsMinting(false);
+      }
+    };
       
       
     useEffect(() => {
@@ -380,13 +380,13 @@ const CanvasComponent = () => {
                     syncShapeInStorage={syncShapeInStorage}
                 />
                 <div className="flex flex-col space-y-2 p-4">
-                    <button
+                    <Button
                         onClick={handleCapture}
                         disabled={isExporting}
                         className="bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
                     >
-                        {isExporting ? 'Capturing...' : 'Capture Whiteboard'}
-                    </button>
+                        {isExporting ? 'Capturing...' : 'Capture Playground'}
+                    </Button>
                     <button
                         onClick={exportWhiteboard}
                         disabled={isExporting || !capturedImage}
@@ -399,7 +399,7 @@ const CanvasComponent = () => {
                         disabled={isMinting || !capturedImage}
                         className="bg-purple-500 text-white p-2 rounded disabled:bg-gray-400"
                     >
-                        {isMinting ? `Minting... (${mintingStep})` : 'Mint NFT'}
+                        {isMinting ? `Minting... (${mintingStep})` : 'Mint'}
                     </button>
                     {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
                     {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
