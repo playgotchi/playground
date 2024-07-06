@@ -384,63 +384,58 @@ const CanvasComponent = () => {
     }, [receiptError]);
 
     return (
+        <>
         <main className='h-screen overflow-hidden'>
-            <Navbar
-                imageInputRef={imageInputRef}
-                activeElement={activeElement}
-                handleImageUpload={(e: any) => {
-                    e.stopPropagation();
-                    handleImageUpload({
-                        file: e.target.files[0],
-                        canvas: fabricRef as any,
-                        shapeRef,
-                        syncShapeInStorage,
-                    });
-                }}
-                handleActiveElement={handleActiveElement}
-            />
             <section className='flex h-full flex-row'>
                 <Live canvasRef={canvasRef} undo={undo} redo={redo} />
+            </section>
+        </main>
+        <div className="flex flex-col space-y-2 p-4">
+                <Button
+                    onClick={handleCapture}
+                    disabled={isExporting}
+                    className="bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
+                >
+                    {isExporting ? 'Capturing...' : 'Capture Playground'}
+                </Button>
+                <Button
+                    onClick={exportWhiteboard}
+                    disabled={isExporting || !capturedImage}
+                    className="bg-green-500 text-white p-2 rounded disabled:bg-gray-400"
+                >
+                    {isExporting ? 'Exporting...' : 'Export'}
+                </Button>
+                <Button
+                    onClick={handleMint}
+                    disabled={isMinting || isReceiptLoading}
+                    className="bg-purple-500 text-white p-2 rounded disabled:bg-gray-400"
+                >
+                    {isMinting || isReceiptLoading ? `Minting... (${mintingStep})` : 'Mint'}
+                </Button>
+                {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
+                {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
+                <Navbar
+                    imageInputRef={imageInputRef}
+                    activeElement={activeElement}
+                    handleImageUpload={(e: any) => {
+                        e.stopPropagation();
+                        handleImageUpload({
+                            file: e.target.files[0],
+                            canvas: fabricRef as any,
+                            shapeRef,
+                            syncShapeInStorage,
+                        });
+                    } }
+                    handleActiveElement={handleActiveElement} />
                 <RightSidebar
                     elementAttributes={elementAttributes}
                     setElementAttributes={setElementAttributes}
                     fabricRef={fabricRef}
                     isEditingRef={isEditingRef}
                     activeObjectRef={activeObjectRef}
-                    syncShapeInStorage={syncShapeInStorage}
-                />
-                <div className="flex flex-col space-y-2 p-4">
-                    <Button
-                        onClick={handleCapture}
-                        disabled={isExporting}
-                        className="bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
-                    >
-                        {isExporting ? 'Capturing...' : 'Capture Playground'}
-                    </Button>
-                    <Button
-                        onClick={exportWhiteboard}
-                        disabled={isExporting || !capturedImage}
-                        className="bg-green-500 text-white p-2 rounded disabled:bg-gray-400"
-                    >
-                        {isExporting ? 'Exporting...' : 'Export'}
-                    </Button>
-                    <Button
-                        onClick={handleMint}
-                        disabled={isMinting || isReceiptLoading}
-                        className="bg-purple-500 text-white p-2 rounded disabled:bg-gray-400"
-                    >
-                        {isMinting || isReceiptLoading ? `Minting... (${mintingStep})` : 'Mint'}
-                    </Button>
-                    {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
-                    {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
-                </div>
-            </section>
-            {capturedImage && (
-                <div className="fixed bottom-4 right-4 p-2 bg-white rounded shadow">
-                    <img src={capturedImage} alt="Captured Whiteboard" className="w-32 h-32 object-cover" />
-                </div>
-            )}
-        </main>
+                    syncShapeInStorage={syncShapeInStorage} />
+            </div>
+            </>
     );
 };
 
