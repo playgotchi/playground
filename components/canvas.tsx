@@ -385,11 +385,31 @@ const CanvasComponent = () => {
 
     return (
         <>
+        <Navbar
+                    imageInputRef={imageInputRef}
+                    activeElement={activeElement}
+                    handleImageUpload={(e: any) => {
+                        e.stopPropagation();
+                        handleImageUpload({
+                            file: e.target.files[0],
+                            canvas: fabricRef as any,
+                            shapeRef,
+                            syncShapeInStorage,
+                        });
+                    } }
+                    handleActiveElement={handleActiveElement} />
         <main className='h-screen overflow-hidden'>
             <section className='flex h-full flex-row'>
                 <Live canvasRef={canvasRef} undo={undo} redo={redo} />
             </section>
         </main>
+        <RightSidebar
+                    elementAttributes={elementAttributes}
+                    setElementAttributes={setElementAttributes}
+                    fabricRef={fabricRef}
+                    isEditingRef={isEditingRef}
+                    activeObjectRef={activeObjectRef}
+                    syncShapeInStorage={syncShapeInStorage} />
         <div className="flex flex-col space-y-2 p-4">
                 <Button
                     onClick={handleCapture}
@@ -414,26 +434,6 @@ const CanvasComponent = () => {
                 </Button>
                 {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
                 {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
-                <Navbar
-                    imageInputRef={imageInputRef}
-                    activeElement={activeElement}
-                    handleImageUpload={(e: any) => {
-                        e.stopPropagation();
-                        handleImageUpload({
-                            file: e.target.files[0],
-                            canvas: fabricRef as any,
-                            shapeRef,
-                            syncShapeInStorage,
-                        });
-                    } }
-                    handleActiveElement={handleActiveElement} />
-                <RightSidebar
-                    elementAttributes={elementAttributes}
-                    setElementAttributes={setElementAttributes}
-                    fabricRef={fabricRef}
-                    isEditingRef={isEditingRef}
-                    activeObjectRef={activeObjectRef}
-                    syncShapeInStorage={syncShapeInStorage} />
             </div>
             </>
     );
