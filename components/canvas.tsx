@@ -398,11 +398,6 @@ const CanvasComponent = () => {
                         });
                     } }
                     handleActiveElement={handleActiveElement} />
-        <main className='h-screen overflow-hidden'>
-            <section className='flex h-full flex-row'>
-                <Live canvasRef={canvasRef} undo={undo} redo={redo} />
-            </section>
-        </main>
         <section className='flex h-full flex-row'>
         <RightSidebar
                     elementAttributes={elementAttributes}
@@ -416,7 +411,7 @@ const CanvasComponent = () => {
                     disabled={isExporting}
                     className="bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
                 >
-                    {isExporting ? 'Capturing...' : 'Capture Playground'}
+                    {isExporting ? 'Capturing...' : 'Capture'}
                 </Button>
                 <Button
                     onClick={exportWhiteboard}
@@ -435,7 +430,11 @@ const CanvasComponent = () => {
                 {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
                 {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
     </section>
-
+        <main className='h-screen overflow-hidden'>
+            <section className='flex h-full flex-row'>
+                <Live canvasRef={canvasRef} undo={undo} redo={redo} />
+            </section>
+        </main>
             </>
     );
 };
