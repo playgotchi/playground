@@ -403,6 +403,7 @@ const CanvasComponent = () => {
                 <Live canvasRef={canvasRef} undo={undo} redo={redo} />
             </section>
         </main>
+        <section className='flex h-full flex-row'>
         <RightSidebar
                     elementAttributes={elementAttributes}
                     setElementAttributes={setElementAttributes}
@@ -410,7 +411,6 @@ const CanvasComponent = () => {
                     isEditingRef={isEditingRef}
                     activeObjectRef={activeObjectRef}
                     syncShapeInStorage={syncShapeInStorage} />
-        <div className="flex flex-col space-y-2 p-4">
                 <Button
                     onClick={handleCapture}
                     disabled={isExporting}
@@ -434,7 +434,8 @@ const CanvasComponent = () => {
                 </Button>
                 {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
                 {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
-            </div>
+    </section>
+
             </>
     );
 };
