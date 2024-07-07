@@ -11,18 +11,15 @@ import { ActiveElement, Attributes } from "@/types/type";
 import html2canvas from 'html2canvas';
 import { useAccount, useChainId } from 'wagmi';
 import { useSimulateContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { zoraNftCreatorV1Config } from "@zoralabs/zora-721-contracts";
 import { base } from 'wagmi/chains';
+
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
-import { erc721DropABI } from "@zoralabs/zora-721-contracts";
-import { Button } from './ui/button';
-import { parseEther } from 'viem';
-
 
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
-
-const YOUR_CONTRACT_ADDRESS = "0x6458804cd6868b1EDF8E61F267e626fFd57d51eC";
+ 
 
 const CanvasComponent = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -59,21 +56,11 @@ const CanvasComponent = () => {
 
     const { address } = useAccount();
     const chainId = useChainId();
+    const { writeContract } = useWriteContract();
+    
 
-    const { data: simulateData, error: simulateError } = useSimulateContract({
-        address: YOUR_CONTRACT_ADDRESS,
-        abi: erc721DropABI,
-        functionName: 'purchase',
-        args: [1n], // quantity
-        value: parseEther('0.000777'), // Adjust if there's a minting fee
-    });
-
-    const { writeContract, data: writeData, error: writeError } = useWriteContract();
-
-    const { data: receiptData, isLoading: isReceiptLoading, error: receiptError } = useWaitForTransactionReceipt({
-        hash: writeData,
-    });
-
+   
+    
     const deleteShapeFromStorage = useMutation(({ storage }, shapeId) => {
         const canvasObjects = storage.get("canvasObjects");
         canvasObjects.delete(shapeId);
@@ -192,52 +179,83 @@ const CanvasComponent = () => {
             }
           };
         });
-    };
-
+      };
     const createMetadata = (imageHash: string) => ({
-        name: "Playground Pic",
-        description: "Made with Playground by Playgotchi. (https://playground.playgotchi.com/)",
+        name: "Playground Capture",
+        description: "A captured Playground session",
         image: `ipfs://${imageHash}`
     });
 
     const handleMint = async () => {
-        setIsMinting(true);
-        setMintingStep('Capturing image');
-        setMintingError(null);
-
-        try {
-            const imageDataUrl = await captureWhiteboard();
-            const imageBlob = await (await fetch(imageDataUrl)).blob();
-
-            setMintingStep('Uploading to IPFS');
-            const imageHash = await uploadToIPFS(imageBlob);
-
-            const metadata = createMetadata(imageHash);
-            const metadataHash = await uploadToIPFS(new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-
-            setMintingStep('Preparing contract interaction');
-            
-            if (simulateError) {
-                throw new Error(`Simulation failed: ${simulateError.message}`);
-            }
-
-            if (!simulateData?.request) {
-                throw new Error('Simulation data is missing');
-            }
-
-            setMintingStep('Sending transaction');
-
-            await writeContract(simulateData.request);
-
-            setMintingStep('Waiting for confirmation');
-
-        } catch (error) {
-            console.error("Error while minting:", error);
-            setMintingError(error instanceof Error ? error.message : String(error));
-        } finally {
-            setIsMinting(false);
+        if (!capturedImage) {
+          alert('Please capture the whiteboard before minting.');
+          return;
         }
-    };
+      
+        if (!address) {
+          alert('Please connect your wallet');
+          return;
+        }
+      
+        if (chainId !== base.id) {
+          alert('Please switch to Base network');
+          return;
+        }
+      
+        setIsMinting(true);
+        setMintingStep('Preparing image...');
+        setMintingError(null);
+        setMintingSuccess(false);
+      
+        try {
+          const response = await fetch(capturedImage);
+          const blob = await response.blob();
+      
+          setMintingStep('Uploading image to IPFS...');
+          const imageHash = await uploadToIPFS(blob);
+          console.log(`Pinned image to IPFS: ${imageHash}`);
+      
+          setMintingStep('Creating metadata...');
+      
+          const args = [
+            "Playground Pic", // Edition name
+            "PP", // Edition reference code
+            BigInt(1), // Edition size (1 for a single mint)
+            3, // Royalty BPS (changed to number)
+            address as `0x${string}`, // Funds recipient address
+            address as `0x${string}`, // Default admin
+            {
+              publicSalePrice: BigInt(0),
+              maxSalePurchasePerAddress: 1,
+              publicSaleStart: BigInt(0),
+              publicSaleEnd: BigInt("0xFFFFFFFFFFFFFFFF"),
+              presaleStart: BigInt(0),
+              presaleEnd: BigInt(0),
+              presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "Made with Playground by Playgotchi (https://playground.playgotchi.com/).", // Description
+            "", // animation URI (optional, replace with "" if not used)
+            `ipfs://${imageHash}`, // Updated imageURI with the full path
+            "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // Referral address
+          ] as const; // Add 'as const' to make it a readonly tuple
+      
+          setMintingStep('Minting NFT...');
+          await writeContract({
+            address: zoraNftCreatorV1Config.address[base.id], 
+            abi: zoraNftCreatorV1Config.abi,
+            functionName: "createEditionWithReferral",
+            args,
+          });
+          setMintingSuccess(true);
+        } catch (error) {
+          console.error('Error minting token:', error);
+          setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
+        } finally {
+          setIsMinting(false);
+          setMintingStep('');
+        }
+      };
+      
 
     useEffect(() => {
         const canvas = initializeFabric({ canvasRef, fabricRef });
@@ -364,78 +382,57 @@ const CanvasComponent = () => {
         });
     }, [canvasObjects]);
 
-    useEffect(() => {
-        if (receiptData) {
-            console.log("Transaction confirmed:", receiptData);
-            setMintingSuccess(true);
-        }
-    }, [receiptData]);
-
-    useEffect(() => {
-        if (writeError) {
-            setMintingError(`Write error: ${writeError.message}`);
-        }
-    }, [writeError]);
-
-    useEffect(() => {
-        if (receiptError) {
-            setMintingError(`Receipt error: ${receiptError.message}`);
-        }
-    }, [receiptError]);
-
     return (
-        <>
-        <Navbar
-                    imageInputRef={imageInputRef}
-                    activeElement={activeElement}
-                    handleImageUpload={(e: any) => {
-                        e.stopPropagation();
-                        handleImageUpload({
-                            file: e.target.files[0],
-                            canvas: fabricRef as any,
-                            shapeRef,
-                            syncShapeInStorage,
-                        });
-                    } }
-                    handleActiveElement={handleActiveElement} />
-        <section className='flex h-full flex-row'>
-        <RightSidebar
+        <main className='h-screen overflow-hidden'>
+            <Navbar
+                imageInputRef={imageInputRef}
+                activeElement={activeElement}
+                handleImageUpload={(e: any) => {
+                    e.stopPropagation();
+                    handleImageUpload({
+                        file: e.target.files[0],
+                        canvas: fabricRef as any,
+                        shapeRef,
+                        syncShapeInStorage,
+                    });
+                }}
+                handleActiveElement={handleActiveElement}
+            />
+            <section className='flex h-full flex-row'>
+                <Live canvasRef={canvasRef} undo={undo} redo={redo} />
+                <RightSidebar
                     elementAttributes={elementAttributes}
                     setElementAttributes={setElementAttributes}
                     fabricRef={fabricRef}
                     isEditingRef={isEditingRef}
                     activeObjectRef={activeObjectRef}
-                    syncShapeInStorage={syncShapeInStorage} />
-                <Button
-                    onClick={handleCapture}
-                    disabled={isExporting}
-                    className="bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
-                >
-                    {isExporting ? 'Capturing...' : 'Capture'}
-                </Button>
-                <Button
-                    onClick={exportWhiteboard}
-                    disabled={isExporting || !capturedImage}
-                    className="bg-green-500 text-white p-2 rounded disabled:bg-gray-400"
-                >
-                    {isExporting ? 'Exporting...' : 'Export'}
-                </Button>
-                <Button
-                    onClick={handleMint}
-                    disabled={isMinting || isReceiptLoading}
-                    className="bg-purple-500 text-white p-2 rounded disabled:bg-gray-400"
-                >
-                    {isMinting || isReceiptLoading ? `Minting... (${mintingStep})` : 'Mint'}
-                </Button>
-                {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
-                {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
-    </section>
-        <main className='h-screen overflow-hidden'>
-            <section className='flex h-full flex-row'>
-                <Live canvasRef={canvasRef} undo={undo} redo={redo} />
-            </section>
+                    syncShapeInStorage={syncShapeInStorage}
+                />
+                    <button
+                        onClick={handleCapture}
+                        disabled={isExporting}
+                        className="bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
+                    >
+                        {isExporting ? 'Capturing...' : 'Capture'}
+                    </button>
+                    <button
+                        onClick={exportWhiteboard}
+                        disabled={isExporting || !capturedImage}
+                        className="bg-green-500 text-white p-2 rounded disabled:bg-gray-400"
+                    >
+                        {isExporting ? 'Exporting...' : 'Export'}
+                    </button>
+                    <button
+                        onClick={handleMint}
+                        disabled={isMinting || !capturedImage}
+                        className="bg-purple-500 text-white p-2 rounded disabled:bg-gray-400"
+                    >
+                        {isMinting ? `Minting... (${mintingStep})` : 'Mint'}
+                    </button>
+                    {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
+                    {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
+            </section>           
         </main>
-            </>
     );
 };
 
