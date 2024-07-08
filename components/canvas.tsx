@@ -59,15 +59,7 @@ const CanvasComponent = () => {
         stroke: "#aabbcc",
     });
 
-    const { address } = useAccount();
-    const chainId = useChainId();
-    
-    const { writeContract, data: writeData, error: writeError } = useWriteContract();
-
-    const { data: receiptData, isLoading: isReceiptLoading, error: receiptError } = useWaitForTransactionReceipt({
-        hash: writeData,
-    });
-
+   
     const deleteShapeFromStorage = useMutation(({ storage }, shapeId) => {
         const canvasObjects = storage.get("canvasObjects");
         canvasObjects.delete(shapeId);
@@ -194,6 +186,15 @@ const CanvasComponent = () => {
         image: `ipfs://${imageHash}`
     });
 
+    const { address } = useAccount();
+    const chainId = useChainId();
+    
+    const { writeContract, data: writeData, error: writeError } = useWriteContract();
+
+    const { data: receiptData, isLoading: isReceiptLoading, error: receiptError } = useWaitForTransactionReceipt({
+        hash: writeData,
+    });
+
     const handleMint = async () => {
         setIsMinting(true);
         setMintingStep('Capturing image');
@@ -211,8 +212,11 @@ const CanvasComponent = () => {
 
             setMintingStep('Preparing contract interaction');
             
-            // Simulate the purchase transaction
-            const { data: simulateData, error: simulateError } = await useSimulateContract({
+
+            setMintingStep('Minting NFT');
+            
+            // Initiate minting transaction
+            writeContract({
                 address: YOUR_CONTRACT_ADDRESS as Address,
                 abi: erc721DropABI,
                 functionName: 'purchase',
@@ -220,32 +224,21 @@ const CanvasComponent = () => {
                 value: parseEther('0.000777'), // Adjust if there's a minting fee
             });
 
-            if (simulateError) {
-                throw new Error(`Simulation failed: ${simulateError.message}`);
-            }
-
-            if (!simulateData?.request) {
-                throw new Error('Simulation data is missing');
-            }
-
-            setMintingStep('Minting NFT');
-            await writeContract(simulateData.request);
-
-            setMintingStep('Waiting for confirmation');
             // Wait for the transaction to be mined
+            setMintingStep('Waiting for confirmation');
             while (!receiptData && !receiptError) {
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second before checking again
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
 
             if (receiptError) {
-                throw new Error('Transaction failed: ' + receiptError.message);
+                throw new Error(`Minting failed: ${receiptError.message}`);
             }
 
             if (receiptData?.status === 'success') {
                 setMintingStep('Updating Metadata');
                 
-                // Update the metadata using updateMetadataBaseWithDetails on the DropMetadataRenderer contract
-                await writeContract({
+                // Update the metadata
+                writeContract({
                     address: DROP_METADATA_RENDERER_ADDRESS as Address,
                     abi: dropMetadataRendererABI,
                     functionName: 'updateMetadataBaseWithDetails',
@@ -263,9 +256,6 @@ const CanvasComponent = () => {
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
 
-                if (receiptError) {
-                    throw new Error('Metadata update failed: ' );
-                }
 
                 if (receiptData?.status === 'success') {
                     setMintingSuccess(true);
@@ -283,7 +273,6 @@ const CanvasComponent = () => {
             setIsMinting(false);
         }
     };
-
 
 
     useEffect(() => {
