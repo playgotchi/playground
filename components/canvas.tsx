@@ -13,6 +13,7 @@ import { useAccount, useChainId } from 'wagmi';
 import { useSimulateContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { zoraNftCreatorV1Config } from "@zoralabs/zora-721-contracts";
 import { base } from 'wagmi/chains';
+import { MaxUint256 } from 'ethers'
 
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
@@ -182,7 +183,7 @@ const CanvasComponent = () => {
       };
     const createMetadata = (imageHash: string) => ({
         name: "Playground Capture",
-        description: "A captured Playground session",
+        description: "Made with Playground by Playgotchi.(https://playground.playgotchi.com/)",
         image: `ipfs://${imageHash}`
     });
 
@@ -208,42 +209,45 @@ const CanvasComponent = () => {
         setMintingSuccess(false);
       
         try {
-          const response = await fetch(capturedImage);
-          const blob = await response.blob();
+            // Capture and upload image
+            const imageDataUrl = await captureWhiteboard();
+            const blob = await (await fetch(imageDataUrl)).blob();
+            const imageHash = await uploadToIPFS(blob);
+    
+            // Create and upload metadata
+            const metadata = createMetadata(imageHash);
+            const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
+            const metadataHash = await uploadToIPFS(metadataBlob);
+    
+            setMintingStep('Creating Drop contract...');
       
-          setMintingStep('Uploading image to IPFS...');
-          const imageHash = await uploadToIPFS(blob);
-          console.log(`Pinned image to IPFS: ${imageHash}`);
-      
-          setMintingStep('Creating metadata...');
-      
-          const args = [
-            "Playground Pic", // Edition name
-            "PP", // Edition reference code
-            BigInt(1), // Edition size (1 for a single mint)
-            3, // Royalty BPS (changed to number)
-            address as `0x${string}`, // Funds recipient address
-            address as `0x${string}`, // Default admin
+        // Create Drop contract
+        const args = [
+            "Playground Pic", // name
+            "PP", // symbol
+            address as `0x${string}`, // defaultAdmin
+            MaxUint256, // editionSize (effectively unlimited)
+            3, // royaltyBPS (3%)
+            address as `0x${string}`, // fundsRecipient
             {
-              publicSalePrice: BigInt(0),
-              maxSalePurchasePerAddress: 1,
-              publicSaleStart: BigInt(0),
-              publicSaleEnd: BigInt("0xFFFFFFFFFFFFFFFF"),
-              presaleStart: BigInt(0),
-              presaleEnd: BigInt(0),
-              presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
+                publicSalePrice: BigInt(0),
+                maxSalePurchasePerAddress: 0,
+                publicSaleStart: BigInt(0),
+                publicSaleEnd: MaxUint256, // (effectively unlimited)
+                presaleStart: BigInt(0),
+                presaleEnd: BigInt(0),
+                presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
             },
-            "Made with Playground by Playgotchi (https://playground.playgotchi.com/).", // Description
-            "", // animation URI (optional, replace with "" if not used)
-            `ipfs://${imageHash}`, // Updated imageURI with the full path
-            "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // Referral address
-          ] as const; // Add 'as const' to make it a readonly tuple
+            `ipfs://${metadataHash}/`, // metadataURIBase
+            "", // metadataContractURI (optional)
+            "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
+        ] as const;
       
           setMintingStep('Minting NFT...');
           await writeContract({
             address: zoraNftCreatorV1Config.address[base.id], 
             abi: zoraNftCreatorV1Config.abi,
-            functionName: "createEditionWithReferral",
+            functionName: "createDropWithReferral",
             args,
           });
           setMintingSuccess(true);
