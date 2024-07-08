@@ -13,7 +13,7 @@ import { useAccount, useChainId } from 'wagmi';
 import { useSimulateContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { zoraNftCreatorV1Config } from "@zoralabs/zora-721-contracts";
 import { base } from 'wagmi/chains';
-import { MaxUint256 } from 'ethers'
+import { MaxUint256 } from 'ethers';
 
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
@@ -182,7 +182,7 @@ const CanvasComponent = () => {
         });
       };
     const createMetadata = (imageHash: string) => ({
-        name: "Playground Capture",
+        name: "Playground Pic",
         description: "Made with Playground by Playgotchi.(https://playground.playgotchi.com/)",
         image: `ipfs://${imageHash}`
     });
@@ -218,8 +218,10 @@ const CanvasComponent = () => {
             const metadata = createMetadata(imageHash);
             const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
             const metadataHash = await uploadToIPFS(metadataBlob);
-    
-            setMintingStep('Creating Drop contract...');
+            console.log(`Pinned image to IPFS: ${imageHash}`);
+            console.log(`Pinned image to IPFS: ${metadataHash}`);
+
+          setMintingStep('Creating metadata...');
       
         // Create Drop contract
         const args = [
@@ -242,8 +244,9 @@ const CanvasComponent = () => {
             "", // metadataContractURI (optional)
             "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
         ] as const;
+
       
-          setMintingStep('Minting NFT...');
+          setMintingStep('Minting Smart Contract...');
           await writeContract({
             address: zoraNftCreatorV1Config.address[base.id], 
             abi: zoraNftCreatorV1Config.abi,
@@ -412,12 +415,13 @@ const CanvasComponent = () => {
                     activeObjectRef={activeObjectRef}
                     syncShapeInStorage={syncShapeInStorage}
                 />
+                <div className="flex flex-col space-y-2 p-4">
                     <button
                         onClick={handleCapture}
                         disabled={isExporting}
                         className="bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
                     >
-                        {isExporting ? 'Capturing...' : 'Capture'}
+                        {isExporting ? 'Capturing...' : 'Capture Whiteboard'}
                     </button>
                     <button
                         onClick={exportWhiteboard}
@@ -431,11 +435,17 @@ const CanvasComponent = () => {
                         disabled={isMinting || !capturedImage}
                         className="bg-purple-500 text-white p-2 rounded disabled:bg-gray-400"
                     >
-                        {isMinting ? `Minting... (${mintingStep})` : 'Mint'}
+                        {isMinting ? `Minting... (${mintingStep})` : 'Mint NFT'}
                     </button>
                     {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
                     {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
-            </section>           
+                </div>
+            </section>
+            {capturedImage && (
+                <div className="fixed bottom-4 right-4 p-2 bg-white rounded shadow">
+                    <img src={capturedImage} alt="Captured Whiteboard" className="w-32 h-32 object-cover" />
+                </div>
+            )}
         </main>
     );
 };
