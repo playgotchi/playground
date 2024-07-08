@@ -5,7 +5,6 @@ import { bringElement, modifyShape } from "@/lib/shapes";
 
 import Text from "./settings/Text";
 import Color from "./settings/Color";
-import Export from "./settings/Export";
 import Dimensions from "./settings/Dimensions";
 
 const RightSidebar = ({
@@ -68,7 +67,6 @@ const RightSidebar = ({
           handleInputChange={handleInputChange}
         /> */}
 
-        <Export />
         <div className="text-xs text-primary-purple mt-3 p-4 px-5 border-b border-t border-slate-700">
           <h3 className='text-[10px] uppercase'>Tips</h3>
           <span>Press / to chat with your cursor
