@@ -13,7 +13,6 @@ import { useAccount, useChainId } from 'wagmi';
 import { useSimulateContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { zoraNftCreatorV1Config } from "@zoralabs/zora-721-contracts";
 import { base } from 'wagmi/chains';
-import { MaxUint256 } from 'ethers';
 
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
@@ -228,14 +227,14 @@ const CanvasComponent = () => {
             "Playground Pic", // name
             "PP", // symbol
             address as `0x${string}`, // defaultAdmin
-            MaxUint256, // editionSize (effectively unlimited)
+            BigInt(100), // Edition size (1 for a single mint)
             3, // royaltyBPS (3%)
             address as `0x${string}`, // fundsRecipient
             {
                 publicSalePrice: BigInt(0),
                 maxSalePurchasePerAddress: 0,
                 publicSaleStart: BigInt(0),
-                publicSaleEnd: MaxUint256, // (effectively unlimited)
+              publicSaleEnd: BigInt("0xFFFFFFFFFFFFFFFF"),
                 presaleStart: BigInt(0),
                 presaleEnd: BigInt(0),
                 presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
