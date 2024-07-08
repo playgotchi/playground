@@ -414,13 +414,12 @@ const CanvasComponent = () => {
                     activeObjectRef={activeObjectRef}
                     syncShapeInStorage={syncShapeInStorage}
                 />
-                <div className="flex flex-col space-y-2 p-4">
                     <button
                         onClick={handleCapture}
                         disabled={isExporting}
                         className="bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
                     >
-                        {isExporting ? 'Capturing...' : 'Capture Whiteboard'}
+                        {isExporting ? 'Capturing...' : 'Capture'}
                     </button>
                     <button
                         onClick={exportWhiteboard}
@@ -434,17 +433,11 @@ const CanvasComponent = () => {
                         disabled={isMinting || !capturedImage}
                         className="bg-purple-500 text-white p-2 rounded disabled:bg-gray-400"
                     >
-                        {isMinting ? `Minting... (${mintingStep})` : 'Mint NFT'}
+                        {isMinting ? `Minting... (${mintingStep})` : 'Mint'}
                     </button>
                     {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
                     {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
-                </div>
-            </section>
-            {capturedImage && (
-                <div className="fixed bottom-4 right-4 p-2 bg-white rounded shadow">
-                    <img src={capturedImage} alt="Captured Whiteboard" className="w-32 h-32 object-cover" />
-                </div>
-            )}
+            </section>           
         </main>
     );
 };
