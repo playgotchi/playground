@@ -13,8 +13,8 @@
   },
   "author": "Playgotchi <https://warpcast.com/playgotchi>",
   "contributors": [
-    "Ting Wang",
-    "Universe",
+    "Ting <https://warpcast.com/ting>",
+    "Universe https://warpcast.com/babyuniverse>", 
     "getoffdeez <https://warpcast.com/getoffdeez.eth>"
   ],
   "dependencies": {
@@ -23,6 +23,7 @@
     "@dynamic-labs/sdk-react-core": "^2.2.4",
     "@dynamic-labs/wagmi-connector": "^2.2.6",
     "@liveblocks/client": "^2.0.5",
+    "@liveblocks/node": "^2.1.0",
     "@liveblocks/react": "^2.0.5",
     "@liveblocks/react-ui": "^2.0.5",
     "@pinata/sdk": "^2.1.0",
