@@ -7,7 +7,7 @@
   },
   "homepage": "https://playground.playgotchi.com/",
   "scripts": {
-    "dev": "next",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start"
   },
@@ -21,9 +21,11 @@
     "@auth/unstorage-adapter": "^2.0.0",
     "@dynamic-labs/ethereum": "^2.2.4",
     "@dynamic-labs/sdk-react-core": "^2.2.4",
+    "@dynamic-labs/wagmi-connector": "^2.2.6",
     "@liveblocks/client": "^2.0.5",
     "@liveblocks/react": "^2.0.5",
     "@liveblocks/react-ui": "^2.0.5",
+    "@pinata/sdk": "^2.1.0",
     "@radix-ui/react-avatar": "^1.0.3",
     "@radix-ui/react-collapsible": "^1.0.3",
     "@radix-ui/react-context-menu": "^2.2.1",
@@ -35,11 +37,17 @@
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-tooltip": "^1.1.1",
     "@simplewebauthn/server": "^9.0.3",
+    "@tanstack/react-query": "^5.49.2",
     "@vercel/kv": "^1.0.1",
+    "@zoralabs/protocol-deployments": "^0.1.13",
+    "@zoralabs/zora-721-contracts": "^1.15.4",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.1",
     "fabric": "^5.3.0",
     "framer-motion": "^11.2.11",
+    "html2canvas": "^1.4.1",
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.274.0",
@@ -52,7 +60,8 @@
     "tailwindcss-animate": "^1.0.7",
     "unstorage": "^1.10.1",
     "uuid": "^9.0.1",
-    "viem": "^2.16.1"
+    "viem": "^2.16.5",
+    "wagmi": "^2.10.9"
   },
   "devDependencies": {
     "@types/fabric": "^5.3.6",
