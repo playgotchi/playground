@@ -11,15 +11,20 @@ import { ActiveElement, Attributes } from "@/types/type";
 import html2canvas from 'html2canvas';
 import { useAccount, useChainId } from 'wagmi';
 import { useSimulateContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { zoraNftCreatorV1Config } from "@zoralabs/zora-721-contracts";
 import { base } from 'wagmi/chains';
-
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
+import { erc721DropABI, dropMetadataRendererABI } from "@zoralabs/zora-721-contracts";
+import { Button } from './ui/button';
+import { parseEther, Address } from 'viem';
+
 
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
- 
+
+const YOUR_CONTRACT_ADDRESS = "0x2506012d406Cd451735e78Ff5Bcea35dC7ee1505";
+const DROP_METADATA_RENDERER_ADDRESS = "0xd1cba36d92B052079523F471Eb891563F2E5dF5C";
+
 
 const CanvasComponent = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -56,11 +61,13 @@ const CanvasComponent = () => {
 
     const { address } = useAccount();
     const chainId = useChainId();
-    const { writeContract } = useWriteContract();
     
+    const { writeContract, data: writeData, error: writeError } = useWriteContract();
 
-   
-    
+    const { data: receiptData, isLoading: isReceiptLoading, error: receiptError } = useWaitForTransactionReceipt({
+        hash: writeData,
+    });
+
     const deleteShapeFromStorage = useMutation(({ storage }, shapeId) => {
         const canvasObjects = storage.get("canvasObjects");
         canvasObjects.delete(shapeId);
@@ -179,89 +186,105 @@ const CanvasComponent = () => {
             }
           };
         });
-      };
+    };
+
     const createMetadata = (imageHash: string) => ({
         name: "Playground Pic",
-        description: "Made with Playground by Playgotchi.(https://playground.playgotchi.com/)",
+        description: "Made with Playground by Playgotchi. (https://playground.playgotchi.com/)",
         image: `ipfs://${imageHash}`
     });
 
     const handleMint = async () => {
-        if (!capturedImage) {
-          alert('Please capture the whiteboard before minting.');
-          return;
-        }
-      
-        if (!address) {
-          alert('Please connect your wallet');
-          return;
-        }
-      
-        if (chainId !== base.id) {
-          alert('Please switch to Base network');
-          return;
-        }
-      
         setIsMinting(true);
-        setMintingStep('Preparing image...');
+        setMintingStep('Capturing image');
         setMintingError(null);
-        setMintingSuccess(false);
-      
+
         try {
-            // Capture and upload image
             const imageDataUrl = await captureWhiteboard();
-            const blob = await (await fetch(imageDataUrl)).blob();
-            const imageHash = await uploadToIPFS(blob);
-    
-            // Create and upload metadata
+            const imageBlob = await (await fetch(imageDataUrl)).blob();
+
+            setMintingStep('Uploading to IPFS');
+            const imageHash = await uploadToIPFS(imageBlob);
+
             const metadata = createMetadata(imageHash);
-            const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
-            const metadataHash = await uploadToIPFS(metadataBlob);
-            console.log(`Pinned image to IPFS: ${imageHash}`);
-            console.log(`Pinned image to IPFS: ${metadataHash}`);
+            const metadataHash = await uploadToIPFS(new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
 
-          setMintingStep('Creating metadata...');
-      
-        // Create Drop contract
-        const args = [
-            "Playground Pic", // name
-            "PP", // symbol
-            address as `0x${string}`, // defaultAdmin
-            BigInt(100), // Edition size (1 for a single mint)
-            3, // royaltyBPS (3%)
-            address as `0x${string}`, // fundsRecipient
-            {
-                publicSalePrice: BigInt(0),
-                maxSalePurchasePerAddress: 0,
-                publicSaleStart: BigInt(0),
-              publicSaleEnd: BigInt("0xFFFFFFFFFFFFFFFF"),
-                presaleStart: BigInt(0),
-                presaleEnd: BigInt(0),
-                presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
-            },
-            `ipfs://${metadataHash}/`, // metadataURIBase
-            "", // metadataContractURI (optional)
-            "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
-        ] as const;
+            setMintingStep('Preparing contract interaction');
+            
+            // Simulate the purchase transaction
+            const { data: simulateData, error: simulateError } = await useSimulateContract({
+                address: YOUR_CONTRACT_ADDRESS as Address,
+                abi: erc721DropABI,
+                functionName: 'purchase',
+                args: [BigInt(1)], // Minting 1 NFT
+                value: parseEther('0.000777'), // Adjust if there's a minting fee
+            });
 
-      
-          setMintingStep('Minting Smart Contract...');
-          await writeContract({
-            address: zoraNftCreatorV1Config.address[base.id], 
-            abi: zoraNftCreatorV1Config.abi,
-            functionName: "createDropWithReferral",
-            args,
-          });
-          setMintingSuccess(true);
+            if (simulateError) {
+                throw new Error(`Simulation failed: ${simulateError.message}`);
+            }
+
+            if (!simulateData?.request) {
+                throw new Error('Simulation data is missing');
+            }
+
+            setMintingStep('Minting NFT');
+            await writeContract(simulateData.request);
+
+            setMintingStep('Waiting for confirmation');
+            // Wait for the transaction to be mined
+            while (!receiptData && !receiptError) {
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second before checking again
+            }
+
+            if (receiptError) {
+                throw new Error('Transaction failed: ' + receiptError.message);
+            }
+
+            if (receiptData?.status === 'success') {
+                setMintingStep('Updating Metadata');
+                
+                // Update the metadata using updateMetadataBaseWithDetails on the DropMetadataRenderer contract
+                await writeContract({
+                    address: DROP_METADATA_RENDERER_ADDRESS as Address,
+                    abi: dropMetadataRendererABI,
+                    functionName: 'updateMetadataBaseWithDetails',
+                    args: [
+                        YOUR_CONTRACT_ADDRESS as Address,
+                        `ipfs://${metadataHash}/`, // metadataBase
+                        '', // metadataExtension (empty string if not needed)
+                        `ipfs://${metadataHash}`, // newContractURI
+                        BigInt(0) // freezeAt (0 if you don't want to freeze metadata)
+                    ],
+                });
+
+                // Wait for the metadata update transaction to be mined
+                while (!receiptData && !receiptError) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                if (receiptError) {
+                    throw new Error('Metadata update failed: ' );
+                }
+
+                if (receiptData?.status === 'success') {
+                    setMintingSuccess(true);
+                } else {
+                    throw new Error('Metadata update transaction failed');
+                }
+            } else {
+                throw new Error('Minting transaction failed');
+            }
+
         } catch (error) {
-          console.error('Error minting token:', error);
-          setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
+            console.error("Error while minting:", error);
+            setMintingError(error instanceof Error ? error.message : String(error));
         } finally {
-          setIsMinting(false);
-          setMintingStep('');
+            setIsMinting(false);
         }
-      };
-      
+    };
+
+
 
     useEffect(() => {
         const canvas = initializeFabric({ canvasRef, fabricRef });
@@ -388,6 +411,25 @@ const CanvasComponent = () => {
         });
     }, [canvasObjects]);
 
+    useEffect(() => {
+        if (receiptData) {
+            console.log("Transaction confirmed:", receiptData);
+            setMintingSuccess(true);
+        }
+    }, [receiptData]);
+
+    useEffect(() => {
+        if (writeError) {
+            setMintingError(`Write error: ${writeError.message}`);
+        }
+    }, [writeError]);
+
+    useEffect(() => {
+        if (receiptError) {
+            setMintingError(`Receipt error: ${receiptError.message}`);
+        }
+    }, [receiptError]);
+
     return (
         <main className='h-screen overflow-hidden'>
             <Navbar
@@ -414,27 +456,27 @@ const CanvasComponent = () => {
                     activeObjectRef={activeObjectRef}
                     syncShapeInStorage={syncShapeInStorage}
                 />
-                    <button
+                    <Button
                         onClick={handleCapture}
                         disabled={isExporting}
                         className="bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
                     >
                         {isExporting ? 'Capturing...' : 'Capture'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={exportWhiteboard}
                         disabled={isExporting || !capturedImage}
                         className="bg-green-500 text-white p-2 rounded disabled:bg-gray-400"
                     >
                         {isExporting ? 'Exporting...' : 'Export'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={handleMint}
-                        disabled={isMinting || !capturedImage}
+                        disabled={isMinting || isReceiptLoading}
                         className="bg-purple-500 text-white p-2 rounded disabled:bg-gray-400"
                     >
-                        {isMinting ? `Minting... (${mintingStep})` : 'Mint'}
-                    </button>
+                        {isMinting || isReceiptLoading ? `Minting... (${mintingStep})` : 'Mint'}
+                    </Button>
                     {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
                     {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
             </section>           
