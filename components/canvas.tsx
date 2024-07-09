@@ -16,7 +16,6 @@ import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
 import { erc721DropABI, dropMetadataRendererABI } from "@zoralabs/zora-721-contracts";
-import { Button } from './ui/button';
 import { parseEther, Address } from 'viem';
 
 
@@ -59,24 +58,7 @@ const CanvasComponent = () => {
         stroke: "#aabbcc",
     });
 
-    const { address } = useAccount();
-    const chainId = useChainId();
-
-    const { data: simulateData, error: simulateError } = useSimulateContract({
-        address: YOUR_CONTRACT_ADDRESS,
-        abi: erc721DropABI,
-        functionName: 'purchase',
-        args: [1n], // quantity
-        value: parseEther('0.000777'), // Adjust if there's a minting fee
-    });
-
-    
-    const { writeContract, data: writeData, error: writeError } = useWriteContract();
-
-    const { data: receiptData, isLoading: isReceiptLoading, error: receiptError } = useWaitForTransactionReceipt({
-        hash: writeData,
-    });
-
+   
     const deleteShapeFromStorage = useMutation(({ storage }, shapeId) => {
         const canvasObjects = storage.get("canvasObjects");
         canvasObjects.delete(shapeId);
@@ -135,7 +117,7 @@ const CanvasComponent = () => {
                 scale: 2,
                 useCORS: true,
                 logging: true,
-                backgroundColor: '#f1f5f9',
+                backgroundColor: '#020817',
             });
             return captureCanvas.toDataURL('image/png');
         } catch (error) {
@@ -203,6 +185,15 @@ const CanvasComponent = () => {
         image: `ipfs://${imageHash}`
     });
 
+    const { address } = useAccount();
+    const chainId = useChainId();
+    
+    const { writeContract, data: writeData, error: writeError } = useWriteContract();
+
+    const { data: receiptData, isLoading: isReceiptLoading, error: receiptError } = useWaitForTransactionReceipt({
+        hash: writeData,
+    });
+
     const handleMint = async () => {
         setIsMinting(true);
         setMintingStep('Capturing image');
@@ -220,8 +211,11 @@ const CanvasComponent = () => {
 
             setMintingStep('Preparing contract interaction');
             
-            // Simulate the purchase transaction
-            const { data: simulateData, error: simulateError } = await useSimulateContract({
+
+            setMintingStep('Minting NFT');
+            
+            // Initiate minting transaction
+            writeContract({
                 address: YOUR_CONTRACT_ADDRESS as Address,
                 abi: erc721DropABI,
                 functionName: 'purchase',
@@ -229,32 +223,21 @@ const CanvasComponent = () => {
                 value: parseEther('0.000777'), // Adjust if there's a minting fee
             });
 
-            if (simulateError) {
-                throw new Error(`Simulation failed: ${simulateError.message}`);
-            }
-
-            if (!simulateData?.request) {
-                throw new Error('Simulation data is missing');
-            }
-
-            setMintingStep('Minting NFT');
-            await writeContract(simulateData.request);
-
-            setMintingStep('Waiting for confirmation');
             // Wait for the transaction to be mined
+            setMintingStep('Waiting for confirmation');
             while (!receiptData && !receiptError) {
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second before checking again
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
 
             if (receiptError) {
-                throw new Error('Transaction failed: ' + receiptError.message);
+                throw new Error(`Minting failed: ${receiptError.message}`);
             }
 
             if (receiptData?.status === 'success') {
                 setMintingStep('Updating Metadata');
                 
-                // Update the metadata using updateMetadataBaseWithDetails on the DropMetadataRenderer contract
-                await writeContract({
+                // Update the metadata
+                writeContract({
                     address: DROP_METADATA_RENDERER_ADDRESS as Address,
                     abi: dropMetadataRendererABI,
                     functionName: 'updateMetadataBaseWithDetails',
@@ -262,7 +245,7 @@ const CanvasComponent = () => {
                         YOUR_CONTRACT_ADDRESS as Address,
                         `ipfs://${metadataHash}/`, // metadataBase
                         '', // metadataExtension (empty string if not needed)
-                        `ipfs://${metadataHash}`, // newContractURI
+                        '', // newContractURI (empty string since you're only updating a single token)
                         BigInt(0) // freezeAt (0 if you don't want to freeze metadata)
                     ],
                 });
@@ -272,9 +255,6 @@ const CanvasComponent = () => {
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
 
-                if (receiptError) {
-                    throw new Error('Metadata update failed: ' );
-                }
 
                 if (receiptData?.status === 'success') {
                     setMintingSuccess(true);
@@ -292,7 +272,6 @@ const CanvasComponent = () => {
             setIsMinting(false);
         }
     };
-
 
 
     useEffect(() => {
@@ -458,44 +437,22 @@ const CanvasComponent = () => {
             <section className='flex h-full flex-row'>
                 <Live canvasRef={canvasRef} undo={undo} redo={redo} />
                 <RightSidebar
-                    elementAttributes={elementAttributes}
-                    setElementAttributes={setElementAttributes}
-                    fabricRef={fabricRef}
-                    isEditingRef={isEditingRef}
-                    activeObjectRef={activeObjectRef}
-                    syncShapeInStorage={syncShapeInStorage}
-                />
-                <div className="flex flex-col space-y-2 p-4">
-                    <Button
-                        onClick={handleCapture}
-                        disabled={isExporting}
-                        className="bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
-                    >
-                        {isExporting ? 'Capturing...' : 'Capture Playground'}
-                    </Button>
-                    <Button
-                        onClick={exportWhiteboard}
-                        disabled={isExporting || !capturedImage}
-                        className="bg-green-500 text-white p-2 rounded disabled:bg-gray-400"
-                    >
-                        {isExporting ? 'Exporting...' : 'Export'}
-                    </Button>
-                    <Button
-                        onClick={handleMint}
-                        disabled={isMinting || isReceiptLoading}
-                        className="bg-purple-500 text-white p-2 rounded disabled:bg-gray-400"
-                    >
-                        {isMinting || isReceiptLoading ? `Minting... (${mintingStep})` : 'Mint'}
-                    </Button>
-                    {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
-                    {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
-                </div>
-            </section>
-            {capturedImage && (
-                <div className="fixed bottom-4 right-4 p-2 bg-white rounded shadow">
-                    <img src={capturedImage} alt="Captured Whiteboard" className="w-32 h-32 object-cover" />
-                </div>
-            )}
+        elementAttributes={elementAttributes}
+        setElementAttributes={setElementAttributes}
+        fabricRef={fabricRef}
+        activeObjectRef={activeObjectRef}
+        isEditingRef={isEditingRef}
+        syncShapeInStorage={syncShapeInStorage}
+        handleCapture={handleCapture}
+        exportWhiteboard={exportWhiteboard}
+        handleMint={handleMint}
+        isExporting={isExporting}
+        isMinting={isMinting}
+        mintingStep={mintingStep}
+        mintingSuccess={mintingSuccess}
+        mintingError={mintingError}
+      />
+            </section>           
         </main>
     );
 };

@@ -1,11 +1,15 @@
 import React, { useMemo, useRef } from "react";
 
-import { RightSidebarProps } from "@/types/type";
 import { bringElement, modifyShape } from "@/lib/shapes";
+import { Button } from './ui/button';
 
 import Text from "./settings/Text";
 import Color from "./settings/Color";
 import Dimensions from "./settings/Dimensions";
+import { RightSidebarProps } from "@/types/type";
+
+
+
 
 const RightSidebar = ({
   elementAttributes,
@@ -14,6 +18,14 @@ const RightSidebar = ({
   activeObjectRef,
   isEditingRef,
   syncShapeInStorage,
+  handleCapture,
+  exportWhiteboard,
+  handleMint,
+  isExporting,
+  isMinting,
+  mintingStep,
+  mintingError,
+  mintingSuccess,
 }: RightSidebarProps) => {
   const colorInputRef = useRef(null);
   const strokeInputRef = useRef(null);
@@ -67,7 +79,33 @@ const RightSidebar = ({
           handleInputChange={handleInputChange}
         /> */}
 
-        <div className="text-xs text-primary-purple mt-3 p-4 px-5 border-b border-t border-slate-700">
+        <Button
+            variant={"primary"}
+            onClick={handleCapture}
+            disabled={isExporting}
+            className="text-white p-2 rounded disabled:bg-gray-400"
+          >
+            {isExporting ? 'Capturing...' : 'Capture'}
+          </Button>
+          <Button
+            variant={"secondary"}
+            onClick={exportWhiteboard}
+            disabled={isExporting}
+            className="text-white p-2 rounded disabled:bg-gray-400"
+          >
+            {isExporting ? 'Exporting...' : 'Export'}
+          </Button>
+          <Button
+          variant={"secondary"}
+            onClick={handleMint}
+            disabled={isMinting}
+            className="text-white p-2 rounded disabled:bg-gray-400"
+          >
+            {isMinting ? `Minting... (${mintingStep})` : 'Mint'}
+          </Button>
+          {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
+          {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
+          <div className="text-xs text-primary-purple mt-3 p-4 px-5 border-b border-t border-slate-700">
           <h3 className='text-[10px] uppercase'>Tips</h3>
           <span>Press / to chat with your cursor
           Press e to use emoji reactions

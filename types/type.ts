@@ -97,6 +97,14 @@ export type RightSidebarProps = {
   activeObjectRef: React.RefObject<fabric.Object | null>;
   isEditingRef: React.MutableRefObject<boolean>;
   syncShapeInStorage: (obj: any) => void;
+  handleCapture: () => void;
+  exportWhiteboard: () => void; // Changed from handleExport to exportWhiteboard
+  handleMint: () => void;
+  isExporting: boolean;
+  isMinting: boolean;
+  mintingStep: string;
+  mintingError: string | null;
+  mintingSuccess: boolean;
 };
 
 export type NavbarProps = {
