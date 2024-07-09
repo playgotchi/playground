@@ -80,23 +80,26 @@ const RightSidebar = ({
         /> */}
 
         <Button
+            variant={"primary"}
             onClick={handleCapture}
             disabled={isExporting}
-            className="bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
+            className="text-white p-2 rounded disabled:bg-gray-400"
           >
             {isExporting ? 'Capturing...' : 'Capture'}
           </Button>
           <Button
+            variant={"secondary"}
             onClick={exportWhiteboard}
             disabled={isExporting}
-            className="bg-green-500 text-white p-2 rounded disabled:bg-gray-400"
+            className="text-white p-2 rounded disabled:bg-gray-400"
           >
             {isExporting ? 'Exporting...' : 'Export'}
           </Button>
           <Button
+          variant={"secondary"}
             onClick={handleMint}
             disabled={isMinting}
-            className="bg-purple-500 text-white p-2 rounded disabled:bg-gray-400"
+            className="text-white p-2 rounded disabled:bg-gray-400"
           >
             {isMinting ? `Minting... (${mintingStep})` : 'Mint'}
           </Button>
