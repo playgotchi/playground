@@ -1,11 +1,24 @@
 "use client";
 
 import { getCsrfToken, getSession } from "next-auth/react";
-
-import { DynamicContextProvider } from "@/lib/dynamic";
-import { EthereumWalletConnectors } from "@/lib/dynamic";
 import { useRouter } from "next/navigation";
-;
+import { DynamicContextProvider, DynamicWidget } from "@dynamic-labs/sdk-react-core";
+import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
+import { DynamicWagmiConnector } from "@dynamic-labs/wagmi-connector";
+import { createConfig, WagmiProvider, useAccount } from "wagmi";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { http } from "viem";
+import {  base } from "viem/chains";
+
+const config = createConfig({
+  chains: [ base ],
+  multiInjectedProviderDiscovery: false,
+  transports: {
+    [base.id]: http(),
+  },
+});
+
+const queryClient = new QueryClient();
 
 export default function ProviderWrapper({ 
   children 
@@ -50,7 +63,13 @@ export default function ProviderWrapper({
         },
       }}
     >
-      {children}
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <DynamicWagmiConnector>
+            {children}
+          </DynamicWagmiConnector>
+        </QueryClientProvider>
+      </WagmiProvider>
     </DynamicContextProvider>
   );
 }

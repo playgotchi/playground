@@ -10,20 +10,9 @@ const fragment = Fragment_Mono({
 
 export const metadata: Metadata = {
   title: "Playground by Playgotchi",
-  description: "Welcome to Playground—where onchain communities play together.",
-  openGraph: {
-    title: "Playground by Playgotchi",
-    description: "Welcome to Playground—where onchain communities play together.",
-    images: [
-      {
-        url: "https://playground.playgotchi.com/playground-social.png",
-        width: 1200,
-        height: 630,
-        alt: "Playground by Playgotchi",
-      },
-    ],
-  },
-};
+  description:
+    "Welcome to Playground by Playgotchi where communities play together",
+}
 
 export default function RootLayout({ children }: React.PropsWithChildren) {
   return (
