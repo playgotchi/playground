@@ -117,7 +117,7 @@ const CanvasComponent = () => {
                 scale: 2,
                 useCORS: true,
                 logging: true,
-                backgroundColor: '#2c355f',
+                backgroundColor: '#020817',
             });
             return captureCanvas.toDataURL('image/png');
         } catch (error) {
