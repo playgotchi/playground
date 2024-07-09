@@ -79,12 +79,6 @@ const RightSidebar = ({
           handleInputChange={handleInputChange}
         /> */}
 
-        <div className="text-xs text-primary-purple mt-3 p-4 px-5 border-b border-t border-slate-700">
-          <h3 className='text-[10px] uppercase'>Tips</h3>
-          <span>Press / to chat with your cursor
-          Press e to use emoji reactions
-          Press escape to close chat</span>
-        </div>
         <Button
             onClick={handleCapture}
             disabled={isExporting}
@@ -108,6 +102,12 @@ const RightSidebar = ({
           </Button>
           {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
           {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
+          <div className="text-xs text-primary-purple mt-3 p-4 px-5 border-b border-t border-slate-700">
+          <h3 className='text-[10px] uppercase'>Tips</h3>
+          <span>Press / to chat with your cursor
+          Press e to use emoji reactions
+          Press escape to close chat</span>
+        </div>
       </section>
     ),
     [elementAttributes]
