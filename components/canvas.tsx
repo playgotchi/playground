@@ -16,7 +16,6 @@ import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
 import { erc721DropABI, dropMetadataRendererABI } from "@zoralabs/zora-721-contracts";
-import { Button } from './ui/button';
 import { parseEther, Address } from 'viem';
 
 
@@ -438,36 +437,21 @@ const CanvasComponent = () => {
             <section className='flex h-full flex-row'>
                 <Live canvasRef={canvasRef} undo={undo} redo={redo} />
                 <RightSidebar
-                    elementAttributes={elementAttributes}
-                    setElementAttributes={setElementAttributes}
-                    fabricRef={fabricRef}
-                    isEditingRef={isEditingRef}
-                    activeObjectRef={activeObjectRef}
-                    syncShapeInStorage={syncShapeInStorage}
-                />
-                    <Button
-                        onClick={handleCapture}
-                        disabled={isExporting}
-                        className="bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
-                    >
-                        {isExporting ? 'Capturing...' : 'Capture'}
-                    </Button>
-                    <Button
-                        onClick={exportWhiteboard}
-                        disabled={isExporting || !capturedImage}
-                        className="bg-green-500 text-white p-2 rounded disabled:bg-gray-400"
-                    >
-                        {isExporting ? 'Exporting...' : 'Export'}
-                    </Button>
-                    <Button
-                        onClick={handleMint}
-                        disabled={isMinting || isReceiptLoading}
-                        className="bg-purple-500 text-white p-2 rounded disabled:bg-gray-400"
-                    >
-                        {isMinting || isReceiptLoading ? `Minting... (${mintingStep})` : 'Mint'}
-                    </Button>
-                    {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
-                    {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
+        elementAttributes={elementAttributes}
+        setElementAttributes={setElementAttributes}
+        fabricRef={fabricRef}
+        activeObjectRef={activeObjectRef}
+        isEditingRef={isEditingRef}
+        syncShapeInStorage={syncShapeInStorage}
+        handleCapture={handleCapture}
+        exportWhiteboard={exportWhiteboard}
+        handleMint={handleMint}
+        isExporting={isExporting}
+        isMinting={isMinting}
+        mintingStep={mintingStep}
+        mintingSuccess={mintingSuccess}
+        mintingError={mintingError}
+      />
             </section>           
         </main>
     );

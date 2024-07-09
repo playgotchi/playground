@@ -1,11 +1,15 @@
 import React, { useMemo, useRef } from "react";
 
-import { RightSidebarProps } from "@/types/type";
 import { bringElement, modifyShape } from "@/lib/shapes";
+import { Button } from './ui/button';
 
 import Text from "./settings/Text";
 import Color from "./settings/Color";
 import Dimensions from "./settings/Dimensions";
+import { RightSidebarProps } from "@/types/type";
+
+
+
 
 const RightSidebar = ({
   elementAttributes,
@@ -14,6 +18,14 @@ const RightSidebar = ({
   activeObjectRef,
   isEditingRef,
   syncShapeInStorage,
+  handleCapture,
+  exportWhiteboard,
+  handleMint,
+  isExporting,
+  isMinting,
+  mintingStep,
+  mintingError,
+  mintingSuccess,
 }: RightSidebarProps) => {
   const colorInputRef = useRef(null);
   const strokeInputRef = useRef(null);
@@ -73,6 +85,29 @@ const RightSidebar = ({
           Press e to use emoji reactions
           Press escape to close chat</span>
         </div>
+        <Button
+            onClick={handleCapture}
+            disabled={isExporting}
+            className="bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
+          >
+            {isExporting ? 'Capturing...' : 'Capture'}
+          </Button>
+          <Button
+            onClick={exportWhiteboard}
+            disabled={isExporting}
+            className="bg-green-500 text-white p-2 rounded disabled:bg-gray-400"
+          >
+            {isExporting ? 'Exporting...' : 'Export'}
+          </Button>
+          <Button
+            onClick={handleMint}
+            disabled={isMinting}
+            className="bg-purple-500 text-white p-2 rounded disabled:bg-gray-400"
+          >
+            {isMinting ? `Minting... (${mintingStep})` : 'Mint'}
+          </Button>
+          {mintingSuccess && <p className="text-green-500">NFT minted successfully!</p>}
+          {mintingError && <p className="text-red-500">Error: {mintingError}</p>}
       </section>
     ),
     [elementAttributes]
