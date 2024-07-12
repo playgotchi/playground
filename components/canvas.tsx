@@ -109,17 +109,28 @@ const CanvasComponent = () => {
     };
 
     const captureWhiteboard = async (): Promise<string> => {
-        const canvas = document.querySelector('main');
-        if (!canvas) throw new Error('Canvas element not found');
+        if (!fabricRef.current) throw new Error('Canvas not initialized');
 
         try {
-            const captureCanvas = await html2canvas(canvas, {
-                scale: 2,
-                useCORS: true,
-                logging: true,
-                backgroundColor: '#020817',
-            });
-            return captureCanvas.toDataURL('image/png');
+            // Get the Fabric.js canvas instance
+            const canvas = fabricRef.current;
+
+            // Create a new canvas with the same dimensions as the Fabric.js canvas
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.getWidth();
+            tempCanvas.height = canvas.getHeight();
+
+            // Get the 2D rendering context of the temporary canvas
+            const ctx = tempCanvas.getContext('2d');
+            if (!ctx) throw new Error('Failed to get 2D context');
+
+            // Render the Fabric.js canvas onto the temporary canvas
+            canvas.renderAll();
+            const fabricCanvas = canvas.getElement();
+            ctx.drawImage(fabricCanvas, 0, 0);
+
+            // Convert the temporary canvas to a data URL
+            return tempCanvas.toDataURL('image/png');
         } catch (error) {
             console.error('Failed to capture whiteboard:', error);
             throw error;
