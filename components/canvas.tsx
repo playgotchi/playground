@@ -108,32 +108,50 @@ const CanvasComponent = () => {
         }
     };
 
-    const captureWhiteboard = async (): Promise<string> => {
+    const captureWhiteboard = async (aspectRatio: number = 1.9): Promise<string> => {
         if (!fabricRef.current) throw new Error('Canvas not initialized');
 
         try {
-            // Get the Fabric.js canvas instance
             const canvas = fabricRef.current;
+            const originalWidth = canvas.getWidth();
+            const originalHeight = canvas.getHeight();
 
-            // Create a new canvas with the same dimensions as the Fabric.js canvas
+            // Calculate dimensions for the new aspect ratio
+            let newWidth, newHeight;
+            if (originalWidth / originalHeight > aspectRatio) {
+                // Original canvas is wider than target aspect ratio
+                newHeight = originalHeight;
+                newWidth = newHeight * aspectRatio;
+            } else {
+                // Original canvas is taller than target aspect ratio
+                newWidth = originalWidth;
+                newHeight = newWidth / aspectRatio;
+            }
+
+            // Create a new canvas with the desired aspect ratio
             const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.getWidth();
-            tempCanvas.height = canvas.getHeight();
+            tempCanvas.width = newWidth;
+            tempCanvas.height = newHeight;
 
-            // Get the 2D rendering context of the temporary canvas
             const ctx = tempCanvas.getContext('2d');
             if (!ctx) throw new Error('Failed to get 2D context');
 
-            // Set the background color
+            // Get the background color from the Fabric.js canvas or use default
             ctx.fillStyle = '#020817'; // Use the same background color as before
             ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-            // Render the Fabric.js canvas onto the temporary canvas
+            // Render the Fabric.js canvas
             canvas.renderAll();
             const fabricCanvas = canvas.getElement();
-            ctx.drawImage(fabricCanvas, 0, 0);
 
-            // Convert the temporary canvas to a data URL
+            // Calculate positioning to center the original content
+            const scale = Math.min(newWidth / originalWidth, newHeight / originalHeight);
+            const x = (newWidth - originalWidth * scale) / 2;
+            const y = (newHeight - originalHeight * scale) / 2;
+
+            // Draw the scaled and centered content onto the new canvas
+            ctx.drawImage(fabricCanvas, x, y, originalWidth * scale, originalHeight * scale);
+
             return tempCanvas.toDataURL('image/png');
         } catch (error) {
             console.error('Failed to capture whiteboard:', error);
@@ -141,11 +159,10 @@ const CanvasComponent = () => {
         }
     };
 
-
     const handleCapture = async () => {
         setIsExporting(true);
         try {
-            const imageDataUrl = await captureWhiteboard();
+            const imageDataUrl = await captureWhiteboard(1.9); // Specify 1.9:1 aspect ratio
             setCapturedImage(imageDataUrl);
         } catch (error) {
             console.error('Failed to capture whiteboard:', error);
@@ -158,7 +175,7 @@ const CanvasComponent = () => {
     const exportWhiteboard = async () => {
         setIsExporting(true);
         try {
-            const imageDataUrl = await captureWhiteboard();
+            const imageDataUrl = await captureWhiteboard(1.9); // Specify 1.9:1 aspect ratio
 
             const link = document.createElement('a');
             link.href = imageDataUrl;
