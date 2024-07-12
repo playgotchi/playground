@@ -124,6 +124,10 @@ const CanvasComponent = () => {
             const ctx = tempCanvas.getContext('2d');
             if (!ctx) throw new Error('Failed to get 2D context');
 
+            // Set the background color
+            ctx.fillStyle = '#020817'; // Use the same background color as before
+            ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
             // Render the Fabric.js canvas onto the temporary canvas
             canvas.renderAll();
             const fabricCanvas = canvas.getElement();
@@ -136,6 +140,7 @@ const CanvasComponent = () => {
             throw error;
         }
     };
+
 
     const handleCapture = async () => {
         setIsExporting(true);
