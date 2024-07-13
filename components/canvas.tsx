@@ -1,5 +1,3 @@
-"use client"
-
 import React, { useRef, useState, useEffect } from 'react';
 import { fabric } from "fabric";
 import { useMutation, useRedo, useStorage, useUndo } from "@liveblocks/react/suspense";
@@ -8,37 +6,20 @@ import { handleDelete, handleKeyDown } from "@/lib/key-events";
 import { handleImageUpload } from "@/lib/shapes";
 import { defaultNavElement } from "@/constants";
 import { ActiveElement, Attributes } from "@/types/type";
-import html2canvas from 'html2canvas';
-import { useAccount, useChainId } from 'wagmi';
-import { useSimulateContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { base } from 'wagmi/chains';
+import { useAccount } from 'wagmi';
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { parseEther } from 'viem';
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
-import { erc721DropABI, dropMetadataRendererABI } from "@zoralabs/zora-721-contracts";
-import { parseEther, Address } from 'viem';
+import { erc721DropABI,  } from '@zoralabs/zora-721-contracts';
+import { zoraCreator1155ImplABI  } from '@zoralabs/protocol-deployments';
 
 
-const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
-
-const YOUR_CONTRACT_ADDRESS = "0x2506012d406Cd451735e78Ff5Bcea35dC7ee1505";
-const DROP_METADATA_RENDERER_ADDRESS = "0xd1cba36d92B052079523F471Eb891563F2E5dF5C";
-
+const MINTING_CONTRACT_ADDRESS = "0x2506012d406Cd451735e78Ff5Bcea35dC7ee1505";
 
 const CanvasComponent = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [capturedImage, setCapturedImage] = useState<string | null>(null);
-    const [isExporting, setIsExporting] = useState(false);
-    const [isMinting, setIsMinting] = useState(false);
-    const [mintingStep, setMintingStep] = useState('');
-    const [mintingError, setMintingError] = useState<string | null>(null);
-    const [mintingSuccess, setMintingSuccess] = useState(false);
-
-    const undo = useUndo();
-    const redo = useRedo();
-
-    const canvasObjects = useStorage((root) => root.canvasObjects);
-
     const fabricRef = useRef<fabric.Canvas | null>(null);
     const isDrawing = useRef(false);
     const shapeRef = useRef<fabric.Object | null>(null);
@@ -58,7 +39,25 @@ const CanvasComponent = () => {
         stroke: "#aabbcc",
     });
 
-   
+    const [capturedImage, setCapturedImage] = useState<string | null>(null);
+    const [isExporting, setIsExporting] = useState(false);
+    const [isMinting, setIsMinting] = useState(false);
+    const [mintingStep, setMintingStep] = useState('');
+    const [mintingError, setMintingError] = useState<string | null>(null);
+    const [mintingSuccess, setMintingSuccess] = useState(false);
+    const [mintData, setMintData] = useState<`0x${string}` | null>(null);
+    const [tokenId, setTokenId] = useState<bigint | null>(null);
+
+
+
+    const undo = useUndo();
+    const redo = useRedo();
+    const canvasObjects = useStorage((root) => root.canvasObjects);
+
+    const { address } = useAccount();
+
+
+
     const deleteShapeFromStorage = useMutation(({ storage }, shapeId) => {
         const canvasObjects = storage.get("canvasObjects");
         canvasObjects.delete(shapeId);
@@ -100,15 +99,13 @@ const CanvasComponent = () => {
                     fabricRef.current.isDrawingMode = false;
                 }
                 break;
-            case "comments":
-                break;
             default:
                 selectedShapeRef.current = elem?.value as string;
                 break;
         }
     };
 
-    const captureWhiteboard = async (aspectRatio: number = 1.9): Promise<string> => {
+    const captureWhiteboard = async (aspectRatio: number = 1.91): Promise<string> => {
         if (!fabricRef.current) throw new Error('Canvas not initialized');
 
         try {
@@ -116,19 +113,15 @@ const CanvasComponent = () => {
             const originalWidth = canvas.getWidth();
             const originalHeight = canvas.getHeight();
 
-            // Calculate dimensions for the new aspect ratio
             let newWidth, newHeight;
             if (originalWidth / originalHeight > aspectRatio) {
-                // Original canvas is wider than target aspect ratio
                 newHeight = originalHeight;
                 newWidth = newHeight * aspectRatio;
             } else {
-                // Original canvas is taller than target aspect ratio
                 newWidth = originalWidth;
                 newHeight = newWidth / aspectRatio;
             }
 
-            // Create a new canvas with the desired aspect ratio
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = newWidth;
             tempCanvas.height = newHeight;
@@ -136,20 +129,16 @@ const CanvasComponent = () => {
             const ctx = tempCanvas.getContext('2d');
             if (!ctx) throw new Error('Failed to get 2D context');
 
-            // Get the background color from the Fabric.js canvas or use default
-            ctx.fillStyle = '#020817'; // Use the same background color as before
+            ctx.fillStyle = '#020817';
             ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-            // Render the Fabric.js canvas
             canvas.renderAll();
             const fabricCanvas = canvas.getElement();
 
-            // Calculate positioning to center the original content
             const scale = Math.min(newWidth / originalWidth, newHeight / originalHeight);
             const x = (newWidth - originalWidth * scale) / 2;
             const y = (newHeight - originalHeight * scale) / 2;
 
-            // Draw the scaled and centered content onto the new canvas
             ctx.drawImage(fabricCanvas, x, y, originalWidth * scale, originalHeight * scale);
 
             return tempCanvas.toDataURL('image/png');
@@ -162,7 +151,7 @@ const CanvasComponent = () => {
     const handleCapture = async () => {
         setIsExporting(true);
         try {
-            const imageDataUrl = await captureWhiteboard(1.9); // Specify 1.9:1 aspect ratio
+            const imageDataUrl = await captureWhiteboard();
             setCapturedImage(imageDataUrl);
         } catch (error) {
             console.error('Failed to capture whiteboard:', error);
@@ -175,7 +164,7 @@ const CanvasComponent = () => {
     const exportWhiteboard = async () => {
         setIsExporting(true);
         try {
-            const imageDataUrl = await captureWhiteboard(1.9); // Specify 1.9:1 aspect ratio
+            const imageDataUrl = await captureWhiteboard();
 
             const link = document.createElement('a');
             link.href = imageDataUrl;
@@ -191,121 +180,101 @@ const CanvasComponent = () => {
         }
     };
 
-       const createMetadata = (imageHash: string, tokenId: string | number) => ({
-        name: `Playground Pic #${tokenId}`,
-        description: "Made with Playground by Playgotchi. (https://playground.playgotchi.com/)",
-        image: `ipfs://${imageHash}`,
-        attributes: [
-            {
-                trait_type: "Token ID",
-                value: tokenId.toString()
-            }
-        ]
-    });
-    
-    const uploadToIPFS = async (blob: Blob): Promise<string> => {
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        return new Promise((resolve, reject) => {
-            reader.onloadend = async () => {
-                const base64data = typeof reader.result === 'string' ? reader.result.split(',')[1] : '';
-                try {
-                    const response = await fetch('/api/upload-to-ipfs', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ content: base64data, filename: 'playground.png' }),
-                    });
-                    const { ipfsHash, filename } = await response.json();
-                    resolve(`ipfs://${ipfsHash}/${filename}`);
-                } catch (error) {
-                    reject(error);
-                }
-            };
+    const uploadToIPFS = async (imageDataUrl: string): Promise<string> => {
+        const response = await fetch('/api/upload-to-ipfs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: imageDataUrl.split(',')[1], filename: 'playground.png' }),
         });
+        const { ipfsHash } = await response.json();
+        return ipfsHash;
     };
 
-    const { address } = useAccount();
-    const chainId = useChainId();
-    
     const { writeContract, data: writeData, error: writeError } = useWriteContract();
+    const { isLoading: isWaitingForTransaction, isSuccess: transactionSuccess } = useWaitForTransactionReceipt({
+        hash: mintData as `0x${string}`,
+      });
 
-    const { data: receiptData, isLoading: isReceiptLoading, error: receiptError } = useWaitForTransactionReceipt({
-        hash: writeData,
-    });
-
-    const handleMint = async () => {
+      const handleMint = async () => {
         setIsMinting(true);
-        setMintingStep('Capturing image');
         setMintingError(null);
+        setMintingSuccess(false);
     
         try {
+            // Step 1: Capture whiteboard
             const imageDataUrl = await captureWhiteboard();
-            const imageBlob = await (await fetch(imageDataUrl)).blob();
-    
-            setMintingStep('Uploading to IPFS');
-            const imageHash = await uploadToIPFS(imageBlob);
-    
-            setMintingStep('Minting NFT');
-            
-        // Purchase (mint) the NFT
+
+            // Step 2: Upload image to IPFS
+            const imageIpfsHash = await uploadToIPFS(imageDataUrl);
+
+            // Step 3: Create metadata JSON
+            const metadata = {
+                name: "Unique Whiteboard Capture",
+                description: "A one-of-a-kind whiteboard creation",
+                image: `ipfs://${imageIpfsHash}`,
+                attributes: [
+                    {
+                        trait_type: "Created Date",
+                        value: new Date().toISOString().split('T')[0]
+                    }
+                ]
+            };
+
+            // Step 4: Upload metadata to IPFS
+            const metadataIpfsHash = await uploadToIPFS(JSON.stringify(metadata));
+
+        // Step 5: Mint NFT
         await writeContract({
-            address: YOUR_CONTRACT_ADDRESS as Address,
+            address: MINTING_CONTRACT_ADDRESS,
             abi: erc721DropABI,
             functionName: 'purchase',
-            args: [BigInt(1)], // Minting 1 NFT
-            value: parseEther('0.000777'), // Adjust if there's a minting fee
+            args: [BigInt(1)],
+            value: parseEther('0.000777'),
+        }, {
+            onSuccess: (result) => {
+                setMintData(result);
+                // Assuming the result includes the tokenId
+                setTokenId((result as any).tokenId ?? null);            
+             },
+            onError: (error) => {
+                throw error;
+            },
         });
-    
-            // Wait for the transaction to be mined
-            setMintingStep('Waiting for confirmation');
-            const receipt = await useWaitForTransactionReceipt({ hash: writeData });
-    
-            if (receipt && receipt.status === 'success' && 'logs' in receipt) {
-                const mintEvent = (receipt.logs as any[]).find((log: any) => 
-                    log.eventName === 'Transfer' && 
-                    log.args.from === '0x0000000000000000000000000000000000000000'
-                );
-                const tokenId = mintEvent ? mintEvent.args.tokenId : null;
-    
-    
-                if (tokenId) {
-                    setMintingStep('Updating Metadata');
-                    
-                    // Create and upload individual token metadata
-                    const metadata = createMetadata(imageHash, tokenId);
-                    const metadataHash = await uploadToIPFS(new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-    
-                    // Update the contract's metadata base to include the token ID
-                    await writeContract({
-                        address: DROP_METADATA_RENDERER_ADDRESS as Address,
-                        abi: dropMetadataRendererABI,
-                        functionName: 'updateMetadataBaseWithDetails',
-                        args: [
-                            YOUR_CONTRACT_ADDRESS as Address,
-                            `ipfs://${(metadataHash as string).split('/').slice(0, -1).join('/')}/`, // metadataBase
-                            '{id}.json', // metadataExtension
-                            '', // newContractURI (empty string if not changing)
-                            BigInt(0) // freezeAt (0 if you don't want to freeze metadata)
-                        ],
-                    });
-    
-                    setMintingSuccess(true);
-                } else {
-                    throw new Error('Failed to retrieve token ID from minting event');
-                }
-            } else {
-                throw new Error('Minting transaction failed');
-            }
-    
-        } catch (error) {
-            console.error("Error while minting:", error);
-            setMintingError(error instanceof Error ? error.message : String(error));
-        } finally {
-            setIsMinting(false);
-        }
-    };
 
-    
+        // Wait for the minting transaction to be confirmed
+        await new Promise<void>((resolve) => {
+            const checkTransaction = setInterval(() => {
+                if (transactionSuccess) {
+                    clearInterval(checkTransaction);
+                    resolve();
+                }
+            }, 1000);
+        });
+
+        // Step 6: Update token URI
+        if (tokenId !== null) {
+            await writeContract({
+                address: MINTING_CONTRACT_ADDRESS,
+                abi: zoraCreator1155ImplABI,  // Use the correct ABI here
+                functionName: 'updateTokenURI',
+                args: [tokenId, `ipfs://${metadataIpfsHash}`],
+            });
+        }
+
+        setMintingSuccess(true);
+    } catch (error) {
+        console.error("Error while minting:", error);
+        setMintingError(error instanceof Error ? error.message : String(error));
+    } finally {
+        setIsMinting(false);
+    }
+};
+
+    useEffect(() => {
+        if (transactionSuccess) {
+            setMintingSuccess(true);
+        }
+    }, [transactionSuccess]);
 
     useEffect(() => {
         const canvas = initializeFabric({ canvasRef, fabricRef });
@@ -404,13 +373,11 @@ const CanvasComponent = () => {
 
         return () => {
             canvas.dispose();
-
             window.removeEventListener("resize", () => {
                 handleResize({
                     canvas: null,
                 });
             });
-
             window.removeEventListener("keydown", (e) =>
                 handleKeyDown({
                     e,
@@ -432,25 +399,6 @@ const CanvasComponent = () => {
         });
     }, [canvasObjects]);
 
-    useEffect(() => {
-        if (receiptData) {
-            console.log("Transaction confirmed:", receiptData);
-            setMintingSuccess(true);
-        }
-    }, [receiptData]);
-
-    useEffect(() => {
-        if (writeError) {
-            setMintingError(`Write error: ${writeError.message}`);
-        }
-    }, [writeError]);
-
-    useEffect(() => {
-        if (receiptError) {
-            setMintingError(`Receipt error: ${receiptError.message}`);
-        }
-    }, [receiptError]);
-
     return (
         <main className='h-screen overflow-hidden'>
             <Navbar
@@ -470,21 +418,21 @@ const CanvasComponent = () => {
             <section className='flex h-full flex-row'>
                 <Live canvasRef={canvasRef} undo={undo} redo={redo} />
                 <RightSidebar
-        elementAttributes={elementAttributes}
-        setElementAttributes={setElementAttributes}
-        fabricRef={fabricRef}
-        activeObjectRef={activeObjectRef}
-        isEditingRef={isEditingRef}
-        syncShapeInStorage={syncShapeInStorage}
-        handleCapture={handleCapture}
-        exportWhiteboard={exportWhiteboard}
-        handleMint={handleMint}
-        isExporting={isExporting}
-        isMinting={isMinting}
-        mintingStep={mintingStep}
-        mintingSuccess={mintingSuccess}
-        mintingError={mintingError}
-      />
+                    elementAttributes={elementAttributes}
+                    setElementAttributes={setElementAttributes}
+                    fabricRef={fabricRef}
+                    activeObjectRef={activeObjectRef}
+                    isEditingRef={isEditingRef}
+                    syncShapeInStorage={syncShapeInStorage}
+                    handleCapture={handleCapture}
+                    exportWhiteboard={exportWhiteboard}
+                    handleMint={handleMint}
+                    isExporting={isExporting}
+                    isMinting={isMinting}
+                    mintingStep={mintingStep}
+                    mintingSuccess={mintingSuccess}
+                    mintingError={mintingError}
+                />
             </section>           
         </main>
     );
