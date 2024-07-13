@@ -191,32 +191,38 @@ const CanvasComponent = () => {
         }
     };
 
+       const createMetadata = (imageHash: string, tokenId: string | number) => ({
+        name: `Playground Pic #${tokenId}`,
+        description: "Made with Playground by Playgotchi. (https://playground.playgotchi.com/)",
+        image: `ipfs://${imageHash}`,
+        attributes: [
+            {
+                trait_type: "Token ID",
+                value: tokenId.toString()
+            }
+        ]
+    });
+    
     const uploadToIPFS = async (blob: Blob): Promise<string> => {
         const reader = new FileReader();
         reader.readAsDataURL(blob);
         return new Promise((resolve, reject) => {
-          reader.onloadend = async () => {
-            const base64data = typeof reader.result === 'string' ? reader.result.split(',')[1] : '';
-            try {
-              const response = await fetch('/api/upload-to-ipfs', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: base64data, filename: 'playground.png' }),
-              });
-              const { ipfsHash } = await response.json();
-              resolve(ipfsHash);
-            } catch (error) {
-              reject(error);
-            }
-          };
+            reader.onloadend = async () => {
+                const base64data = typeof reader.result === 'string' ? reader.result.split(',')[1] : '';
+                try {
+                    const response = await fetch('/api/upload-to-ipfs', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content: base64data, filename: 'playground.png' }),
+                    });
+                    const { ipfsHash, filename } = await response.json();
+                    resolve(`ipfs://${ipfsHash}/${filename}`);
+                } catch (error) {
+                    reject(error);
+                }
+            };
         });
     };
-
-    const createMetadata = (imageHash: string) => ({
-        name: "Playground Pic",
-        description: "Made with Playground by Playgotchi. (https://playground.playgotchi.com/)",
-        image: `ipfs://${imageHash}`
-    });
 
     const { address } = useAccount();
     const chainId = useChainId();
@@ -231,73 +237,66 @@ const CanvasComponent = () => {
         setIsMinting(true);
         setMintingStep('Capturing image');
         setMintingError(null);
-
+    
         try {
             const imageDataUrl = await captureWhiteboard();
             const imageBlob = await (await fetch(imageDataUrl)).blob();
-
+    
             setMintingStep('Uploading to IPFS');
             const imageHash = await uploadToIPFS(imageBlob);
-
-            const metadata = createMetadata(imageHash);
-            const metadataHash = await uploadToIPFS(new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-
-            setMintingStep('Preparing contract interaction');
-            
-
+    
             setMintingStep('Minting NFT');
             
-            // Initiate minting transaction
-            writeContract({
-                address: YOUR_CONTRACT_ADDRESS as Address,
-                abi: erc721DropABI,
-                functionName: 'purchase',
-                args: [BigInt(1)], // Minting 1 NFT
-                value: parseEther('0.000777'), // Adjust if there's a minting fee
-            });
-
+        // Purchase (mint) the NFT
+        await writeContract({
+            address: YOUR_CONTRACT_ADDRESS as Address,
+            abi: erc721DropABI,
+            functionName: 'purchase',
+            args: [BigInt(1)], // Minting 1 NFT
+            value: parseEther('0.000777'), // Adjust if there's a minting fee
+        });
+    
             // Wait for the transaction to be mined
             setMintingStep('Waiting for confirmation');
-            while (!receiptData && !receiptError) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-
-            if (receiptError) {
-                throw new Error(`Minting failed: ${receiptError.message}`);
-            }
-
-            if (receiptData?.status === 'success') {
-                setMintingStep('Updating Metadata');
-                
-                // Update the metadata
-                writeContract({
-                    address: DROP_METADATA_RENDERER_ADDRESS as Address,
-                    abi: dropMetadataRendererABI,
-                    functionName: 'updateMetadataBaseWithDetails',
-                    args: [
-                        YOUR_CONTRACT_ADDRESS as Address,
-                        `ipfs://${metadataHash}/`, // metadataBase
-                        '', // metadataExtension (empty string if not needed)
-                        `ipfs://${metadataHash}`, // newContractURI
-                        BigInt(0) // freezeAt (0 if you don't want to freeze metadata)
-                    ],
-                });
-
-                // Wait for the metadata update transaction to be mined
-                while (!receiptData && !receiptError) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-
-
-                if (receiptData?.status === 'success') {
+            const receipt = await useWaitForTransactionReceipt({ hash: writeData });
+    
+            if (receipt && receipt.status === 'success' && 'logs' in receipt) {
+                const mintEvent = (receipt.logs as any[]).find((log: any) => 
+                    log.eventName === 'Transfer' && 
+                    log.args.from === '0x0000000000000000000000000000000000000000'
+                );
+                const tokenId = mintEvent ? mintEvent.args.tokenId : null;
+    
+    
+                if (tokenId) {
+                    setMintingStep('Updating Metadata');
+                    
+                    // Create and upload individual token metadata
+                    const metadata = createMetadata(imageHash, tokenId);
+                    const metadataHash = await uploadToIPFS(new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    
+                    // Update the contract's metadata base to include the token ID
+                    await writeContract({
+                        address: DROP_METADATA_RENDERER_ADDRESS as Address,
+                        abi: dropMetadataRendererABI,
+                        functionName: 'updateMetadataBaseWithDetails',
+                        args: [
+                            YOUR_CONTRACT_ADDRESS as Address,
+                            `ipfs://${(metadataHash as string).split('/').slice(0, -1).join('/')}/`, // metadataBase
+                            '{id}.json', // metadataExtension
+                            '', // newContractURI (empty string if not changing)
+                            BigInt(0) // freezeAt (0 if you don't want to freeze metadata)
+                        ],
+                    });
+    
                     setMintingSuccess(true);
                 } else {
-                    throw new Error('Metadata update transaction failed');
+                    throw new Error('Failed to retrieve token ID from minting event');
                 }
             } else {
                 throw new Error('Minting transaction failed');
             }
-
+    
         } catch (error) {
             console.error("Error while minting:", error);
             setMintingError(error instanceof Error ? error.message : String(error));
@@ -306,6 +305,7 @@ const CanvasComponent = () => {
         }
     };
 
+    
 
     useEffect(() => {
         const canvas = initializeFabric({ canvasRef, fabricRef });
