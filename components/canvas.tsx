@@ -198,29 +198,30 @@ const CanvasComponent = () => {
       });
 
       const handleMint = async () => {
+        console.log("Mint button clicked");
         setIsMinting(true);
         setMintingError(null);
         setMintingSuccess(false);
         
         try {
-            // Step 1: Capture whiteboard
+            console.log("Capturing whiteboard");
             const imageDataUrl = await captureWhiteboard();
     
-            // Step 2: Upload image to IPFS
+            console.log("Uploading to IPFS");
             const imageIpfsHash = await uploadToIPFS(imageDataUrl);
     
-            // Define the token ID and new URI
-            const tokenId = BigInt(1);  // The ID of the token you want to update
-            const uri = `ipfs://${imageIpfsHash}`;  // The new URI for the token
+            const tokenId = BigInt(1);
+            const uri = `ipfs://${imageIpfsHash}`;
     
-            // Call the updateTokenURI function
+            console.log("Calling writeContract");
             await writeContract({
                 address: MINTING_CONTRACT_ADDRESS,
-                abi: zoraCreator1155ImplABI,  // Use the correct ABI here
+                abi: zoraCreator1155ImplABI,
                 functionName: 'updateTokenURI',
                 args: [tokenId, uri],
             });
     
+            console.log("Transaction sent");
             setMintingSuccess(true);
         } catch (error) {
             console.error("Error while updating token URI:", error);
