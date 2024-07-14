@@ -201,76 +201,34 @@ const CanvasComponent = () => {
         setIsMinting(true);
         setMintingError(null);
         setMintingSuccess(false);
-    
+        
         try {
             // Step 1: Capture whiteboard
             const imageDataUrl = await captureWhiteboard();
-
+    
             // Step 2: Upload image to IPFS
             const imageIpfsHash = await uploadToIPFS(imageDataUrl);
-
-            // Step 3: Create metadata JSON
-            const metadata = {
-                name: "Unique Whiteboard Capture",
-                description: "A one-of-a-kind whiteboard creation",
-                image: `ipfs://${imageIpfsHash}`,
-                attributes: [
-                    {
-                        trait_type: "Created Date",
-                        value: new Date().toISOString().split('T')[0]
-                    }
-                ]
-            };
-
-            // Step 4: Upload metadata to IPFS
-            const metadataIpfsHash = await uploadToIPFS(JSON.stringify(metadata));
-
-        // Step 5: Mint NFT
-        await writeContract({
-            address: MINTING_CONTRACT_ADDRESS,
-            abi: erc721DropABI,
-            functionName: 'purchase',
-            args: [BigInt(1)],
-            value: parseEther('0.000777'),
-        }, {
-            onSuccess: (result) => {
-                setMintData(result);
-                // Assuming the result includes the tokenId
-                setTokenId((result as any).tokenId ?? null);            
-             },
-            onError: (error) => {
-                throw error;
-            },
-        });
-
-        // Wait for the minting transaction to be confirmed
-        await new Promise<void>((resolve) => {
-            const checkTransaction = setInterval(() => {
-                if (transactionSuccess) {
-                    clearInterval(checkTransaction);
-                    resolve();
-                }
-            }, 1000);
-        });
-
-        // Step 6: Update token URI
-        if (tokenId !== null) {
+    
+            // Define the token ID and new URI
+            const tokenId = BigInt(1);  // The ID of the token you want to update
+            const uri = `ipfs://${imageIpfsHash}`;  // The new URI for the token
+    
+            // Call the updateTokenURI function
             await writeContract({
                 address: MINTING_CONTRACT_ADDRESS,
                 abi: zoraCreator1155ImplABI,  // Use the correct ABI here
                 functionName: 'updateTokenURI',
-                args: [tokenId, `ipfs://${metadataIpfsHash}`],
+                args: [tokenId, uri],
             });
+    
+            setMintingSuccess(true);
+        } catch (error) {
+            console.error("Error while updating token URI:", error);
+            setMintingError(error instanceof Error ? error.message : String(error));
+        } finally {
+            setIsMinting(false);
         }
-
-        setMintingSuccess(true);
-    } catch (error) {
-        console.error("Error while minting:", error);
-        setMintingError(error instanceof Error ? error.message : String(error));
-    } finally {
-        setIsMinting(false);
-    }
-};
+    };
 
     useEffect(() => {
         if (transactionSuccess) {
