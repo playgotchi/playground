@@ -40,6 +40,7 @@
     "@tanstack/react-query": "^5.49.2",
     "@vercel/kv": "^1.0.1",
     "@zoralabs/protocol-deployments": "^0.1.13",
+    "@zoralabs/protocol-sdk": "^0.7.2",
     "@zoralabs/zora-721-contracts": "^1.15.4",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
@@ -60,7 +61,7 @@
     "tailwindcss-animate": "^1.0.7",
     "unstorage": "^1.10.1",
     "uuid": "^9.0.1",
-    "viem": "^2.16.5",
+    "viem": "^2.17.3",
     "wagmi": "^2.10.9"
   },
   "devDependencies": {

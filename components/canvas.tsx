@@ -8,17 +8,17 @@ import { handleDelete, handleKeyDown } from "@/lib/key-events";
 import { handleImageUpload } from "@/lib/shapes";
 import { defaultNavElement } from "@/constants";
 import { ActiveElement, Attributes } from "@/types/type";
-import { useAccount } from 'wagmi';
+import { useAccount, useChainId, usePublicClient } from 'wagmi';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { parseEther } from 'viem';
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
-import { erc721DropABI,  } from '@zoralabs/zora-721-contracts';
+import { createCreatorClient } from "@zoralabs/protocol-sdk";
 import { zoraCreator1155ImplABI  } from '@zoralabs/protocol-deployments';
 
 
-const MINTING_CONTRACT_ADDRESS = "0x2506012d406Cd451735e78Ff5Bcea35dC7ee1505";
+
+///const MINTING_CONTRACT_ADDRESS = "0x2506012d406Cd451735e78Ff5Bcea35dC7ee1505";
 
 const CanvasComponent = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -56,7 +56,6 @@ const CanvasComponent = () => {
     const redo = useRedo();
     const canvasObjects = useStorage((root) => root.canvasObjects);
 
-    const { address } = useAccount();
 
 
 
@@ -192,17 +191,20 @@ const CanvasComponent = () => {
         return ipfsHash;
     };
 
-    const { writeContract, data: writeData, error: writeError } = useWriteContract();
+    const { writeContract } = useWriteContract();
     const { isLoading: isWaitingForTransaction, isSuccess: transactionSuccess } = useWaitForTransactionReceipt({
         hash: mintData as `0x${string}`,
       });
 
+      const chainId = useChainId();
+      const publicClient = usePublicClient()!;
+      const { address } = useAccount();
+
       const handleMint = async () => {
-        console.log("Mint button clicked");
         setIsMinting(true);
         setMintingError(null);
         setMintingSuccess(false);
-        
+    
         try {
             console.log("Capturing whiteboard");
             const imageDataUrl = await captureWhiteboard();
@@ -210,21 +212,33 @@ const CanvasComponent = () => {
             console.log("Uploading to IPFS");
             const imageIpfsHash = await uploadToIPFS(imageDataUrl);
     
-            const tokenId = BigInt(1);
-            const uri = `ipfs://${imageIpfsHash}`;
+            const tokenMetadataURI = `ipfs://${imageIpfsHash}`;
+    
+            console.log("Creating ERC-1155 contract");
+            const creatorClient = createCreatorClient({ chainId, publicClient });
+    
+            const { parameters } = await creatorClient.create1155({
+                contract: {
+                    name: "Playground Pics",
+                    uri: "", 
+                },
+                token: {
+                    tokenMetadataURI: tokenMetadataURI,
+                },
+                account: address!,
+            });
     
             console.log("Calling writeContract");
-            await writeContract({
-                address: MINTING_CONTRACT_ADDRESS,
-                abi: zoraCreator1155ImplABI,
-                functionName: 'updateTokenURI',
-                args: [tokenId, uri],
-            });
+            await writeContract(parameters);
     
             console.log("Transaction sent");
             setMintingSuccess(true);
         } catch (error) {
-            console.error("Error while updating token URI:", error);
+            console.error("Error while minting:", error);
+            if (error instanceof Error) {
+                console.error("Error message:", error.message);
+                console.error("Error stack:", error.stack);
+            }
             setMintingError(error instanceof Error ? error.message : String(error));
         } finally {
             setIsMinting(false);
