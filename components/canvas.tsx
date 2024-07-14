@@ -15,7 +15,7 @@ import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
 import { createCreatorClient } from "@zoralabs/protocol-sdk";
 import { zoraCreator1155ImplABI  } from '@zoralabs/protocol-deployments';
-
+import { parseEther } from 'viem';
 
 
 ///const MINTING_CONTRACT_ADDRESS = "0x2506012d406Cd451735e78Ff5Bcea35dC7ee1505";
@@ -214,25 +214,27 @@ const CanvasComponent = () => {
     
             const tokenMetadataURI = `ipfs://${imageIpfsHash}`;
     
-            console.log("Creating ERC-1155 contract");
-            const creatorClient = createCreatorClient({ chainId, publicClient });
+            console.log("Preparing to mint token");
     
-            const { parameters } = await creatorClient.create1155({
-                contract: {
-                    name: "Playground Pics",
-                    uri: "", 
-                },
-                token: {
-                    tokenMetadataURI: tokenMetadataURI,
-                },
-                account: address!,
-            });
+            // Prepare the mintWithRewards transaction
+            const tokenId = 0n; // Assuming this is the first token in the contract
+            const quantity = 1n;
+            const mintReferral = "0x124F3eB5540BfF243c2B57504e0801E02696920E"; // Replace with your referral address
+            const minterArguments = "0x"; // Empty bytes for no additional arguments
     
-            console.log("Calling writeContract");
-            await writeContract(parameters);
+            const mintConfig = {
+                address:0x347EA78c8c51672E2eEf6812678D7A873a71Fb65,
+                abi: zoraCreator1155ImplABI,
+                functionName: 'mintWithRewards',
+                args: [address, tokenId, quantity, minterArguments, mintReferral],
+                value: parseEther("0.000777"),
+            } as any;  // Add 'as any' to bypass the TypeScript type check
     
-            console.log("Transaction sent");
+            console.log("Calling mintWithRewards");
+            await writeContract(mintConfig);
+            console.log("Mint transaction sent");
             setMintingSuccess(true);
+            setTokenId(tokenId);
         } catch (error) {
             console.error("Error while minting:", error);
             if (error instanceof Error) {
@@ -244,6 +246,7 @@ const CanvasComponent = () => {
             setIsMinting(false);
         }
     };
+    
 
     useEffect(() => {
         if (transactionSuccess) {
