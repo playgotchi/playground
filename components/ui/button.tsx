@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
@@ -13,12 +13,13 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
         outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
+          "border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
         secondary:
-          "border border-[#4FFF14] text-teal-900 hover:bg-secondary/80 hover:cursor-py-cursor-hover w-full hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
+          "border border-[#4FFF14] text-background hover:bg-[#4FFF14]/60 hover:cursor-py-cursor-hover w-full hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
         ghost: "hover:bg-accent hover:text-accent-foreground active:cursor-py-cursor-press",
-        link: "text-primary underline-offset-4 hover:underline hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
-        primary: "bg-[#4FFF14] text-black hover:bg-[#4FFF14]/60 w-full hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
+        link: "text-primary underline-offset-4 underline hover:underline hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
+        primary: "bg-[#4FFF14] text-background hover:bg-[#4FFF14]/60 w-full hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
+        social: "bg-black border border-border-color text-white  w-full hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
       },
       size: {
         default: "h-10 px-4 py-2",

@@ -5,16 +5,19 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { Info } from "lucide-react";
 import { Hint } from "./hint";
+import { useTheme } from "next-themes";
 
 export default function Header() {
   const isLoggedIn = useIsLoggedIn();
-
+  const { theme } = useTheme();
+  
   return (
-    <header className="sticky flex justify-center bg-background">
+    <header className="flex justify-center">
       <div className="flex items-center justify-between w-full max-w-7xl p-8 mx-auto sm:px-6">
         <Link href="/">
           <Image
-            src="/logo.png"
+          key={theme}
+            src={theme === 'light' ? "/logo-black.png" : "/logo.png"}
             alt={"Playground logo"}
             width={220}
             height={40}

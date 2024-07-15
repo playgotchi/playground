@@ -1,6 +1,6 @@
 import CardBase from "@/components/card-base"
 import CardNoun from "@/components/card-noun"
-import Footer from "@/components/footer"
+import Footer from "@/components/footer/footer"
 import Header from "@/components/header"
 import CardPlaygotchi from "@/components/card-playgotchi"
 import { Plus } from "lucide-react"

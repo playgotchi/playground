@@ -437,21 +437,21 @@ const CanvasComponent = () => {
             <section className='flex h-full flex-row'>
                 <Live canvasRef={canvasRef} undo={undo} redo={redo} />
                 <RightSidebar
-        elementAttributes={elementAttributes}
-        setElementAttributes={setElementAttributes}
-        fabricRef={fabricRef}
-        activeObjectRef={activeObjectRef}
-        isEditingRef={isEditingRef}
-        syncShapeInStorage={syncShapeInStorage}
-        handleCapture={handleCapture}
-        exportWhiteboard={exportWhiteboard}
-        handleMint={handleMint}
-        isExporting={isExporting}
-        isMinting={isMinting}
-        mintingStep={mintingStep}
-        mintingSuccess={mintingSuccess}
-        mintingError={mintingError}
-      />
+                    elementAttributes={elementAttributes}
+                    setElementAttributes={setElementAttributes}
+                    fabricRef={fabricRef}
+                    activeObjectRef={activeObjectRef}
+                    isEditingRef={isEditingRef}
+                    syncShapeInStorage={syncShapeInStorage}
+                    handleCapture={handleCapture}
+                    exportWhiteboard={exportWhiteboard}
+                    handleMint={handleMint}
+                    isExporting={isExporting}
+                    isMinting={isMinting}
+                    mintingStep={mintingStep}
+                    mintingSuccess={mintingSuccess}
+                    mintingError={mintingError}
+                />
             </section>           
         </main>
     );
