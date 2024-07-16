@@ -7,13 +7,13 @@
 
 @layer base {
   :root {
-    --background: #fafafa;
-    --foreground: #030712;
+    --background: 0 0% 100%;
+    --foreground: 50 100% 3%;
 
     --card: 210 20% 96%;
     --card-foreground: 230 96% 2%;
 
-    --popover: #f1f5f9;
+    --popover: 210 40% 98%;
     --popover-foreground: #030712;
 
     --primary: #4FFF14;
@@ -25,7 +25,7 @@
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
+    --accent: 105 100% 54%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
@@ -69,12 +69,15 @@
     }
   }
   .dark {
-    --background: #0a0a0a;
-    --foreground: #fafafa;
+    --background: 50 100% 3%;
+    --foreground: 0 0% 100%;
     --border: #a1a1aa;
 
     --card: 0 0% 4%;
     --card-foreground: #f1f5f9;
+
+    --popover:  50 100% 3%;
+    --popover-foreground: #030712;
 
     /* Custom CSS to override Dynamic Button in dark mode */
     .dynamic-shadow-dom {
@@ -91,22 +94,32 @@
       --dynamic-connect-button-background-hover: ##4FF000;
       --dynamic-connect-button-color-hover: #fff;
       --dynamic-connect-button-shadow-hover: 0px 3px 0px #000000;
+
       --dynamic-wallet-list-tile-background: #1c1917;
+      --dynamic-wallet-list-tile-border: 1px solid #18181b;
       --dynamic-wallet-list-tile-border-radius: 0;
       --dynamic-wallet-list-tile-background-hover: #34333a;
+
       --dynamic-search-bar-background: trasnparent;
+      --dynamic-search-bar-background-hover: #34333a;
+      --dynamic-search-bar-background-focus: #34333a;
       --dynamic-search-bar-border: 1px solid #18181b;
+
       --dynamic-tooltip-color: #000;
       --dynamic-tooltip-text-color: #fff;
+
       --dynamic-modal-width: 22.5rem;
       --dynamic-modal-padding: 1.5rem;
+
       --dynamic-text-primary: #fff;
       --dynamic-text-secondary: #fff;
       --dynamic-text-link: #4FFF14;
+
       --dynamic-footer-border-top: 1px solid #18181b;
       --dynamic-brand-secondary-color: black;
-      --dynamic-wallet-list-tile-border: 1px solid #18181b;
-      --dynamic-button-primary-background: #4FFF14;
+
+      --dynamic-button-primary-background: #000;
+      --dynamic-button-primary-border: 1px solid #34333a;
     }
   }
 }
