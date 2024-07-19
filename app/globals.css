@@ -7,19 +7,19 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 50 100% 3%;
+    --background: 105 3% 97%;
+    --foreground: 214 5% 4%;
 
-    --card: 210 20% 96%;
+    --card: 105 4% 96%;
     --card-foreground: 230 96% 2%;
 
     --popover: 210 40% 98%;
-    --popover-foreground: #030712;
+    --popover-foreground: 230 96% 2%;
 
-    --primary: #4FFF14;
-    --primary-foreground: 210 40% 98%;
+    --primary: 120 3% 6%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 210 40% 96.1%;
+    --secondary: 120 3% 15%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
@@ -31,9 +31,12 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: #262626;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 120 4% 78%;
+    --input: 120 4% 78%;
+    --ring: 120 4% 78%;
+
+    --brand: 105 100% 54%;
+    --brand-foreground: 105 5% 6%;
 
     --radius: 0.5rem;
 
@@ -69,15 +72,38 @@
     }
   }
   .dark {
-    --background: 50 100% 3%;
-    --foreground: 0 0% 100%;
-    --border: #a1a1aa;
-
-    --card: 0 0% 4%;
-    --card-foreground: #f1f5f9;
-
-    --popover:  50 100% 3%;
-    --popover-foreground: #030712;
+      --background: 214 5% 4%;
+      --foreground: 105 3% 97%;
+  
+      --card: 210 20% 96%;
+      --card-foreground: 230 96% 2%;
+  
+      --popover: 210 40% 98%;
+      --popover-foreground: 230 96% 2%;
+  
+      --primary: 0 0% 100%;
+      --primary-foreground: 120 3% 6%;
+  
+      --secondary: 24 10% 10%;
+      --secondary-foreground: 222.2 47.4% 11.2%;
+  
+      --muted: 210 40% 96.1%;
+      --muted-foreground: 215.4 16.3% 46.9%;
+  
+      --accent: 105 100% 54%;
+      --accent-foreground: 222.2 47.4% 11.2%;
+  
+      --destructive: 0 84.2% 60.2%;
+      --destructive-foreground: 210 40% 98%;
+  
+      --border: 24 6% 83%;
+      --input: 214.3 31.8% 91.4%;
+      --ring: 222.2 84% 4.9%;
+  
+      --brand: 105 100% 54%;
+      --brand-foreground: 105 3% 6%;
+  
+      --radius: 0.5rem;
 
     /* Custom CSS to override Dynamic Button in dark mode */
     .dynamic-shadow-dom {

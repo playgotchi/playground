@@ -9,22 +9,23 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
+        default: "bg-brand text-brand-foreground hover:bg-primary/90 hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
         outline:
-          "border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
+          "border border-input bg-background text-primary hover:bg-accent hover:text-accent-foreground hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
         secondary:
-          "border border-[#4FFF14] text-background hover:bg-[#4FFF14]/60 hover:cursor-py-cursor-hover w-full hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
+          "border border-brand text-primary hover:bg-brand/20 hover:cursor-py-cursor-hover w-full hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
         ghost: "hover:bg-accent hover:text-accent-foreground active:cursor-py-cursor-press",
         link: "text-primary underline-offset-4 underline hover:underline hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
-        primary: "bg-[#4FFF14] text-background hover:bg-[#4FFF14]/60 w-full hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
+        primary: "bg-brand text-brand-foreground hover:bg-brand/60 w-full hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
         social: "bg-black border border-border-color text-white  w-full hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
+        shapes: "text-primary hover:cursor-py-cursor-hover active:cursor-py-cursor-press",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
+        default: "h-10 px-4 py-2 rounded-none",
+        sm: "h-9 px-3",
+        lg: "h-11 px-8",
         icon: "h-10 w-10",
       },
     },

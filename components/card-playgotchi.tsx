@@ -16,7 +16,7 @@ const CardPlaygotchi= () => {
       <Image src="/playgotchi-playground.png" alt={"Kai"} width={200} height={200}       
       />
       <div className="w-[200px] bg-[#4FFF14] h-[10px] top-0 mt-[-8px] absolute"/>
-      <h3 className="text-primary typewriter font-bold">Playgotchi</h3>
+      <h3 className="text-foreground text-center typewriter font-bold">Playgotchi</h3>
       <Link href={'/playgotchi'}>
         <Button variant={'secondary'}>Let's Play</Button>
       </Link>

@@ -434,7 +434,7 @@ const CanvasComponent = () => {
                 }}
                 handleActiveElement={handleActiveElement}
             />
-            <section className='flex h-full flex-row'>
+            <section className='flex h-full flex-row bg-background'>
                 <Live canvasRef={canvasRef} undo={undo} redo={redo} />
                 <RightSidebar
                     elementAttributes={elementAttributes}

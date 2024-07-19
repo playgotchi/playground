@@ -24,7 +24,7 @@ const Navbar = ({ activeElement, imageInputRef, handleImageUpload, handleActiveE
   const { theme } = useTheme(); 
 
   return (
-    <nav className="flex select-none items-center justify-between gap-4 bg-background px-5 text-primary border-b border-dotted border-neutral-700">
+    <nav className="flex select-none items-center justify-between gap-4 bg-background px-5 text-primary border-b border-dotted border-border">
       <Link href="/dashboard">
           <Image src={theme === 'light' ? "/logo-black.png" : "/logo.png"}
            alt="Playground" width={200} height={67} className="animate-pulse transition-transform"/>
@@ -38,8 +38,8 @@ const Navbar = ({ activeElement, imageInputRef, handleImageUpload, handleActiveE
               if (Array.isArray(item.value)) return;
               handleActiveElement(item);
             }}
-            className={`group px-2.5 py-5 flex justify-center items-center text-foreground
-            ${isActive(item.value) ? "bg-accent/20" : "hover:bg-primary-grey-200"}
+            className={`group px-2.5 py-5 flex justify-center items-center hover:bg-brand/20 text-foreground
+            ${isActive(item.value) ? "bg-brand/20" : "text-foreground"}
             `}
           >
             {Array.isArray(item.value) ? (
@@ -53,22 +53,22 @@ const Navbar = ({ activeElement, imageInputRef, handleImageUpload, handleActiveE
             ) : item?.value === "comments" ? (
               // If value is comments, trigger the NewThread component
               <NewThread>
-                <Button className="relative w-5 h-5 object-contain">
+                <Button className="relative w-5 h-5 object-contain" variant={'shapes'}>
                   <Image
                     src={item.icon}
                     alt={item.name}
                     fill
-                    className={isActive(item.value) ? "invert" : ""}
+                    className={isActive(item.value) ? "text-primary" : ""}
                   />
                 </Button>
               </NewThread>
             ) : (
-              <Button className="relative w-5 h-5 object-contain">
+              <Button className="relative w-5 h-5 object-contain text-primary" variant={'shapes'}>
                 <Image
                   src={item.icon}
                   alt={item.name}
                   fill
-                  className={isActive(item.value) ? "invert" : ""}
+                  className={isActive(item.value) ? "text-primary" : "text-primary"}
                 />
               </Button>
             )}

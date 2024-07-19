@@ -47,7 +47,7 @@ const RightSidebar = ({
   // memoize the content of the right sidebar to avoid re-rendering on every mouse actions
   const memoizedContent = useMemo(
     () => (
-      <section className="flex flex-col border-primary-grey-200 border-l border-dotted border-slate-700 text-primary max-w-72 min-w-[280px] sticky right-0 h-full max-sm:hidden select-none pb-[100px] overflow-y-auto">
+      <section className="flex flex-col border-border border-l border-dotted max-w-72 min-w-[280px] sticky right-0 h-full max-sm:hidden select-none pb-[100px] overflow-y-auto">
         <h3 className=" px-5 pt-4 text-xs uppercase mt-3">Design</h3>
         {/* <Dimensions
           isEditingRef={isEditingRef}
@@ -84,7 +84,7 @@ const RightSidebar = ({
             variant={"primary"}
             onClick={handleCapture}
             disabled={isExporting}
-            className="text-primary p-2 rounded disabled:bg-gray-400"
+            className="p-2 rounded disabled:bg-gray-400"
           >
             {isExporting ? 'Capturing...' : 'Capture'}
           </Button>

@@ -10,7 +10,7 @@ const CardNoun= () => {
     <Image src="/yellow-collective.png"  alt={"Yellow Collective"} width={200} height={200}       
     />
     <div className="w-[200px] bg-yellow-500 h-[10px] top-0 mt-[-8px] absolute"/>
-    <h3 className="text-primary text-center typewriter font-bold">Yellow Collective</h3>
+    <h3 className="text-foreground text-center typewriter font-bold">Yellow Collective</h3>
     <Link href={'/nouns'}>
       <Button variant={'secondary'}>Let's Play</Button>
     </Link>

@@ -72,7 +72,7 @@ export const getShapeInfo = (shapeType: string) => {
         name: "Line",
       };
 
-    case "i-text":
+    case "text":
       return {
         icon: "/assets/text.svg",
         name: "Text",
