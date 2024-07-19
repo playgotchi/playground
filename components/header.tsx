@@ -5,9 +5,11 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { Info } from "lucide-react";
 import { Hint } from "./hint";
+import { usePathname } from "next/navigation";
 
 export default function Header() {
   const isLoggedIn = useIsLoggedIn();
+  const pathname = usePathname();
 
   return (
     <header className="sticky flex justify-center bg-background">
@@ -22,7 +24,7 @@ export default function Header() {
           />
         </Link>
         <div className="flex items-center gap-4">
-        {isLoggedIn && (
+        {isLoggedIn && pathname !== '/dashboard' && (
             <Link href="/dashboard">
               <Button variant={'primary'}>Dashboard</Button>
             </Link>
