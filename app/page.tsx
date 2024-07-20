@@ -1,4 +1,4 @@
-import Footer from "@/components/footer";
+import Footer from "@/components/footer/footer";
 import Header from "@/components/header";
 import Image from "next/image";
 import { auth } from "auth"
@@ -23,28 +23,31 @@ export default async function Index() {
       <Header />
       <main className="flex-auto w-full  max-w-7xl m-auto gap-8 ">
         <h1 className="text-3xl font-bold text-center animate-pulse">Welcome to Playground</h1>
-        <p className="text-center m-4 text-white/75">Early access is open to these onchain communities</p>
-        <div className="flex gap-24 justify-center mt-8">          
-          <div className="flex flex-col gap-4 border-4 border-b-8 border-blue-500 shadow-lg p-4 bg-white rounded-md transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2 min-w-56">
+        <p className="text-center m-4">Early access is open to these onchain communities</p>
+        <div className="flex flex-col md:flex-row justify-center mt-8">          
+          <div className="flex flex-col max-w-[360px] relative m-auto gap-4 border-4 border-b-8 border-blue-500 shadow-lg p-4 transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2 min-w-56">
             <Image src="/baldjessy.gif" alt={"Bald Jesse"} width={200} height={200} unoptimized      
             />
-            <h3 className="text-teal-900 text-center typewriter font-bold">Supabald Jesse</h3>
+            <div className="w-[200px] bg-blue-500 h-[10px] top-0 mt-[-8px] absolute"/>
+            <h3 className=" text-center typewriter font-bold">Supabald Jesse</h3>
             <Link href={"https://letsgetjessebald.com/"} target="_blank" rel="noopener noreferrer">
               <Button variant={'secondary'}>View site</Button>
             </Link>
           </div>
-          <div className="flex flex-col gap-4 border-4 border-b-8 border-[#4FFF14] shadow-lg p-4 bg-white rounded-md transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2 min-w-56">
+          <div className="flex flex-col max-w-[360px] relative m-auto gap-4 border-4 border-b-8 border-[#4FFF14] shadow-lg p-4  transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2 min-w-56">
             <Image src="/Playgotchi-cards.gif" alt={""} width={200} height={200} unoptimized  
             />
-            <h3 className="text-teal-900 text-center typewriter font-bold">Playgotchi</h3>
+            <div className="w-[200px] bg-[#4FFF14] h-[10px] top-0 mt-[-8px] absolute"/>
+            <h3 className=" text-center typewriter font-bold">Playgotchi</h3>
             <Link href={"https://zora.co/collect/base:0xd569f16053f5b8b26459d5fcf90a385fda84c4da"} target="_blank" rel="noopener noreferrer">
               <Button variant={'secondary'}>Mint on Zora</Button>
             </Link>
           </div>
-          <div className="flex flex-col gap-4 border-4 border-b-8 border-yellow-500 shadow-lg p-4 bg-white rounded-md transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2 min-w-56">
+          <div className="flex flex-col max-w-[360px] relative m-auto overflow-visible gap-4 border-4 border-b-8 border-yellow-500 shadow-lg p-4 transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:rotate-2 min-w-56">
             <Image src="/Collective-Nouns.gif" alt={"Yellow Collective"} width={200} height={200}  unoptimized      
             />
-            <h3 className="text-teal-900 text-center typewriter font-bold">Collective Nouns</h3>
+            <div className="w-[200px] bg-yellow-500 h-[10px] top-0 mt-[-8px] absolute"/>
+            <h3 className=" text-center typewriter font-bold">Collective Nouns</h3>
             <Link href={"https://zora.co/@basedandyellow/"} target="_blank" rel="noopener noreferrer">
               <Button variant={'secondary'}>View on Zora</Button>
             </Link>

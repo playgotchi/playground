@@ -7,35 +7,146 @@
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 105 3% 97%;
+    --foreground: 214 5% 4%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 105 4% 96%;
+    --card-foreground: 230 96% 2%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 210 40% 98%;
+    --popover-foreground: 230 96% 2%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 120 3% 6%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 210 40% 96.1%;
+    --secondary: 120 3% 15%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
+    --accent: 105 100% 54%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 120 4% 78%;
+    --input: 120 4% 78%;
+    --ring: 120 4% 78%;
+
+    --brand: 105 100% 54%;
+    --brand-foreground: 105 5% 6%;
 
     --radius: 0.5rem;
+
+    /* Custom CSS to override Dynamic Button */
+    .dynamic-shadow-dom {
+      --dynamic-font-family-primary: "Fragment Mono", sans-serif;
+      --dynamic-font-family-numbers: "Roboto Mono", monospace, sans-serif;
+      --dynamic-border-radius: 0;
+      --dynamic-base-1: #fafafa;
+      --dynamic-base-2: #e5e5e5;
+      --dynamic-base-3: #d4d4d4;
+      --dynamic-base-4: #fafafa;
+      --dynamic-base-5: #fafafa;
+      --dynamic-connect-button-background: #4FFF14;
+      --dynamic-connect-button-color: #000;
+      --dynamic-connect-button-background-hover: #4FF999;
+      --dynamic-connect-button-color-hover: #fff;
+      --dynamic-connect-button-shadow-hover: 0px 3px 0px #000000;
+      --dynamic-wallet-list-tile-background: #e5e7eb;
+      --dynamic-wallet-list-tile-border-radius: 0;
+      --dynamic-search-border-radius: 0;
+      --dynamic-tooltip-color: #000;
+      --dynamic-tooltip-text-color: #fff;
+      --dynamic-modal-width: 22.5rem;
+      --dynamic-modal-padding: 1.5rem;
+      --dynamic-text-primary: #030712;
+      --dynamic-text-secondary: #171717;
+      --dynamic-brand-primary-color: #4FFF14;
+      --dynamic-brand-secondary-color: #ddd6fe;
+      --dynamic-badge-dot-background: #4FFF14;
+      --dynamic-badge-text-color: #000;
+      --dynamic-footer-icon-color : #4FFF14;
+    }
+  }
+  .dark {
+      --background: 214 5% 4%;
+      --foreground: 105 3% 97%;
+  
+      --card: 210 20% 96%;
+      --card-foreground: 230 96% 2%;
+  
+      --popover: 210 40% 98%;
+      --popover-foreground: 230 96% 2%;
+  
+      --primary: 0 0% 100%;
+      --primary-foreground: 120 3% 6%;
+  
+      --secondary: 24 10% 10%;
+      --secondary-foreground: 222.2 47.4% 11.2%;
+  
+      --muted: 210 40% 96.1%;
+      --muted-foreground: 215.4 16.3% 46.9%;
+  
+      --accent: 105 100% 54%;
+      --accent-foreground: 222.2 47.4% 11.2%;
+  
+      --destructive: 0 84.2% 60.2%;
+      --destructive-foreground: 210 40% 98%;
+  
+      --border: 24 6% 83%;
+      --input: 214.3 31.8% 91.4%;
+      --ring: 222.2 84% 4.9%;
+  
+      --brand: 105 100% 54%;
+      --brand-foreground: 105 3% 6%;
+  
+      --radius: 0.5rem;
+
+    /* Custom CSS to override Dynamic Button in dark mode */
+    .dynamic-shadow-dom {
+      --dynamic-font-family-primary: "Fragment Mono", sans-serif;
+      --dynamic-font-family-numbers: "Roboto Mono", monospace, sans-serif;
+      --dynamic-border-radius: 0;
+      --dynamic-base-1: #0a0a0a;
+      --dynamic-base-2: #000;
+      --dynamic-base-3: #1F1E24;
+      --dynamic-base-4: transparent;
+      --dynamic-base-5: #1F1E24;
+      --dynamic-connect-button-background: #4FFF14;
+      --dynamic-connect-button-color: #000;
+      --dynamic-connect-button-background-hover: ##4FF000;
+      --dynamic-connect-button-color-hover: #fff;
+      --dynamic-connect-button-shadow-hover: 0px 3px 0px #000000;
+
+      --dynamic-wallet-list-tile-background: #1c1917;
+      --dynamic-wallet-list-tile-border: 1px solid #18181b;
+      --dynamic-wallet-list-tile-border-radius: 0;
+      --dynamic-wallet-list-tile-background-hover: #34333a;
+
+      --dynamic-search-bar-background: trasnparent;
+      --dynamic-search-bar-background-hover: #34333a;
+      --dynamic-search-bar-background-focus: #34333a;
+      --dynamic-search-bar-border: 1px solid #18181b;
+
+      --dynamic-tooltip-color: #000;
+      --dynamic-tooltip-text-color: #fff;
+
+      --dynamic-modal-width: 22.5rem;
+      --dynamic-modal-padding: 1.5rem;
+
+      --dynamic-text-primary: #fff;
+      --dynamic-text-secondary: #fff;
+      --dynamic-text-link: #4FFF14;
+
+      --dynamic-footer-border-top: 1px solid #18181b;
+      --dynamic-brand-secondary-color: black;
+
+      --dynamic-button-primary-background: #000;
+      --dynamic-button-primary-border: 1px solid #34333a;
+    }
   }
 }
 
@@ -73,10 +184,3 @@
 @keyframes blink {
   50% { border-color: transparent; }
 }
-
-.dynamic-shadow-dom {
-  --dynamic-connect-button-background: #4fff14;
-  --dynamic-connect-button-color: #000;
-  --dynamic-connect-button-background-hover: #2EA207;
-  --dynamic-connect-button-color-hover: #000;
-  }

@@ -11,7 +11,7 @@ const PolicyModal = () => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline">Policy and Terms</Button>
+        <Button variant="link">Policy and Terms</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>

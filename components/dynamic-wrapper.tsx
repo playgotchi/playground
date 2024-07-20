@@ -10,6 +10,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http } from "viem";
 import {  base } from "viem/chains";
 
+import { ThemeProvider, useTheme } from "next-themes";
+import { useEffect, useState } from "react";
+
 const config = createConfig({
   chains: [ base ],
   multiInjectedProviderDiscovery: false,
@@ -24,8 +27,17 @@ export default function ProviderWrapper({
   children 
 }: React.PropsWithChildren) {
   const router = useRouter();
+  const { theme } = useTheme();
+  const [currentTheme, setCurrentTheme] = useState('light');
+
+  useEffect(() => {
+    if (theme) {
+      setCurrentTheme(theme);
+    }
+  }, [theme]);
   return (
     <DynamicContextProvider
+    theme={currentTheme === 'dark' ? 'dark' : 'light'}
       settings={{
         environmentId: process.env.NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID || '',
         walletConnectors: [EthereumWalletConnectors],

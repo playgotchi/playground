@@ -12,6 +12,8 @@ import ShapesMenu from "./ShapesMenu";
 import Link from "next/link";
 import { DynamicWidget } from "@/lib/dynamic";
 import { NewThread } from "./comments/NewThread";
+import { ModeToggle } from "./mode-toggle";
+import { useTheme } from "next-themes";
 
 
 const Navbar = ({ activeElement, imageInputRef, handleImageUpload, handleActiveElement }: NavbarProps) => {
@@ -19,10 +21,13 @@ const Navbar = ({ activeElement, imageInputRef, handleImageUpload, handleActiveE
     (activeElement && activeElement.value === value) ||
     (Array.isArray(value) && value.some((val) => val?.value === activeElement?.value));
 
+  const { theme } = useTheme(); 
+
   return (
-    <nav className="flex select-none items-center justify-between gap-4 bg-primary-black px-5 text-white border-b border-dotted border-neutral-700">
+    <nav className="flex select-none items-center justify-between gap-4 bg-background px-5 text-primary border-b border-dotted border-border">
       <Link href="/dashboard">
-        <Image src="/logo.png" alt="Playground" width={200} height={67} className="animate-pulse transition-transform"/>
+          <Image src={theme === 'light' ? "/logo-black.png" : "/logo.png"}
+           alt="Playground" width={200} height={67} className="animate-pulse transition-transform"/>
       </Link>
 
       <ul className="flex flex-row">
@@ -33,8 +38,8 @@ const Navbar = ({ activeElement, imageInputRef, handleImageUpload, handleActiveE
               if (Array.isArray(item.value)) return;
               handleActiveElement(item);
             }}
-            className={`group px-2.5 py-5 flex justify-center items-center
-            ${isActive(item.value) ? "bg-primary-purple" : "hover:bg-primary-grey-200"}
+            className={`group px-2.5 py-5 flex justify-center items-center hover:bg-brand/20 text-foreground
+            ${isActive(item.value) ? "bg-brand/20" : "text-foreground"}
             `}
           >
             {Array.isArray(item.value) ? (
@@ -48,22 +53,22 @@ const Navbar = ({ activeElement, imageInputRef, handleImageUpload, handleActiveE
             ) : item?.value === "comments" ? (
               // If value is comments, trigger the NewThread component
               <NewThread>
-                <Button className="relative w-5 h-5 object-contain">
+                <Button className="relative w-5 h-5 object-contain" variant={'shapes'}>
                   <Image
                     src={item.icon}
                     alt={item.name}
                     fill
-                    className={isActive(item.value) ? "invert" : ""}
+                    className={isActive(item.value) ? "text-primary" : ""}
                   />
                 </Button>
               </NewThread>
             ) : (
-              <Button className="relative w-5 h-5 object-contain">
+              <Button className="relative w-5 h-5 object-contain text-primary" variant={'shapes'}>
                 <Image
                   src={item.icon}
                   alt={item.name}
                   fill
-                  className={isActive(item.value) ? "invert" : ""}
+                  className={isActive(item.value) ? "text-primary" : "text-primary"}
                 />
               </Button>
             )}
@@ -71,9 +76,10 @@ const Navbar = ({ activeElement, imageInputRef, handleImageUpload, handleActiveE
         ))}
       </ul>
 
-      <div className="flex items-center gap-8">
+      <div className="flex items-center gap-4">
         <ActiveUsers />
         <DynamicWidget />
+        <ModeToggle />
       </div>
     </nav>
   );
