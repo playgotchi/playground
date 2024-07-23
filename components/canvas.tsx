@@ -10,15 +10,16 @@ import { defaultNavElement } from "@/constants";
 import { ActiveElement, Attributes } from "@/types/type";
 import { useAccount, useChainId, usePublicClient } from 'wagmi';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
-import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { zoraCreator1155ImplABI  } from '@zoralabs/protocol-deployments';
 import { parseEther } from 'viem';
+import { ZoraAbi } from '@/lib/zoraABI';
+import { zoraNftCreatorV1Config } from '@zoralabs/zora-721-contracts';
+import { base } from 'wagmi/chains';
 
 
-///const MINTING_CONTRACT_ADDRESS = "0x2506012d406Cd451735e78Ff5Bcea35dC7ee1505";
 
 const CanvasComponent = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -47,7 +48,7 @@ const CanvasComponent = () => {
     const [mintingStep, setMintingStep] = useState('');
     const [mintingError, setMintingError] = useState<string | null>(null);
     const [mintingSuccess, setMintingSuccess] = useState(false);
-    const [mintData, setMintData] = useState<`0x${string}` | null>(null);
+    const [mintData, setMintData] = useState<string | null>(null);
     const [tokenId, setTokenId] = useState<bigint | null>(null);
 
 
@@ -169,7 +170,7 @@ const CanvasComponent = () => {
 
             const link = document.createElement('a');
             link.href = imageDataUrl;
-            link.download = 'whiteboard-export.png';
+            link.download = 'playground-export.png';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -181,78 +182,158 @@ const CanvasComponent = () => {
         }
     };
 
-    const uploadToIPFS = async (imageDataUrl: string): Promise<string> => {
-        const response = await fetch('/api/upload-to-ipfs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: imageDataUrl.split(',')[1], filename: 'playground.png' }),
+    const uploadToIPFS = async (blob: Blob): Promise<string> => {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        return new Promise((resolve, reject) => {
+          reader.onloadend = async () => {
+            const base64data = typeof reader.result === 'string' ? reader.result.split(',')[1] : '';
+            try {
+              const response = await fetch('/api/upload-to-ipfs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: base64data, filename: 'playground.png' }),
+              });
+              const { ipfsHash } = await response.json();
+              resolve(ipfsHash);
+            } catch (error) {
+              reject(error);
+            }
+          };
         });
-        const { ipfsHash } = await response.json();
-        return ipfsHash;
-    };
+      };
 
-    const { writeContract } = useWriteContract();
+    const [deployedContractAddress, setDeployedContractAddress] = useState<string | null>(null);
+
+    const { writeContractAsync } = useWriteContract();
     const { isLoading: isWaitingForTransaction, isSuccess: transactionSuccess } = useWaitForTransactionReceipt({
-        hash: mintData as `0x${string}`,
+        hash: mintData ? (mintData as `0x${string}`) : undefined,
       });
 
       const chainId = useChainId();
       const publicClient = usePublicClient()!;
       const { address } = useAccount();
 
+
+      const createMetadata = (imageHash: string) => ({
+        name: "Playground Capture",
+        description: "A captured Playground session",
+        image: `ipfs://${imageHash}`
+    });
+
       const handleMint = async () => {
         setIsMinting(true);
         setMintingError(null);
         setMintingSuccess(false);
+        setMintingStep('Capturing image');
     
         try {
             console.log("Capturing whiteboard");
-            const imageDataUrl = await captureWhiteboard();
+          const imageDataUrl = await captureWhiteboard();
     
-            console.log("Uploading to IPFS");
-            const imageIpfsHash = await uploadToIPFS(imageDataUrl);
+          console.log("Uploading to IPFS");
+          setMintingStep('Uploading to IPFS');
+            // Capture and upload image
+            const blob = await (await fetch(imageDataUrl)).blob();
+            const imageHash = await uploadToIPFS(blob);
     
-            const tokenMetadataURI = `ipfs://${imageIpfsHash}`;
-    
-            console.log("Preparing to mint token");
-    
-            // Prepare the mintWithRewards transaction
-            const tokenId = 0n; // Assuming this is the first token in the contract
-            const quantity = 1n;
-            const mintReferral = "0x124F3eB5540BfF243c2B57504e0801E02696920E"; // Replace with your referral address
-            const minterArguments = "0x"; // Empty bytes for no additional arguments
-    
-            const mintConfig = {
-                address:0x347EA78c8c51672E2eEf6812678D7A873a71Fb65,
-                abi: zoraCreator1155ImplABI,
-                functionName: 'mintWithRewards',
-                args: [address, tokenId, quantity, minterArguments, mintReferral],
-                value: parseEther("0.000777"),
-            } as any;  // Add 'as any' to bypass the TypeScript type check
-    
-            console.log("Calling mintWithRewards");
-            await writeContract(mintConfig);
-            console.log("Mint transaction sent");
-            setMintingSuccess(true);
-            setTokenId(tokenId);
-        } catch (error) {
-            console.error("Error while minting:", error);
-            if (error instanceof Error) {
-                console.error("Error message:", error.message);
-                console.error("Error stack:", error.stack);
-            }
-            setMintingError(error instanceof Error ? error.message : String(error));
-        } finally {
-            setIsMinting(false);
-        }
-    };
-    
+            // Create and upload metadata
+            const metadata = createMetadata(imageHash);
+            const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
+            const metadataHash = await uploadToIPFS(metadataBlob);
+            console.log(`Pinned image to IPFS: ${imageHash}`);
+            console.log(`Pinned image to IPFS: ${metadataHash}`);
 
-    useEffect(() => {
-        if (transactionSuccess) {
-            setMintingSuccess(true);
+          setMintingStep('Creating metadata...');
+        
+
+          console.log("Preparing to deploy Contract");
+
+          setMintingStep('Deploying contract');
+          const deployConfig = {
+            address: zoraNftCreatorV1Config.address[base.id], 
+            abi: ZoraAbi,
+            functionName: 'createDropWithReferral' as const, // Define as literal type
+            args: [
+                "Playground Pic", // Edition name
+                "PP", // Edition reference code
+                address as `0x${string}`, // Default admin
+                BigInt(1), // Edition size (1 for a single mint)
+                3, // Royalty BPS (changed to number)
+                address as `0x${string}`, // Funds recipient address
+                {
+                  publicSalePrice: BigInt(0),
+                  maxSalePurchasePerAddress: 1,
+                  publicSaleStart: BigInt(0),
+                  publicSaleEnd: BigInt("0xFFFFFFFFFFFFFFFF"),
+                  presaleStart: BigInt(0),
+                  presaleEnd: BigInt(0),
+                  presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
+                },
+                `ipfs://${metadataHash}`, // Pass the metadata IPFS hash here
+                "", // animation URI (optional, replace with "" if not used)
+                "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // Referral address
+              ] as const,
+              maxFeePerBlobGas: BigInt(0), // Placeholder value, replace as needed
+              blobs: [], // Placeholder value, replace as needed
+          
+          };
+    
+          const deployHash = await writeContractAsync(deployConfig);
+      
+          if (deployHash) {
+            const deployReceipt = await publicClient.waitForTransactionReceipt({ hash: deployHash });
+            if (deployReceipt.contractAddress) {
+              const contractAddress = deployReceipt.contractAddress;
+              setDeployedContractAddress(contractAddress);
+
+              console.log(contractAddress);
+
+    
+              setMintingStep('Minting NFT');
+              // Prepare the mintWithRewards transaction 
+              const quantity = 1n;
+              const mintReferral = "0x124F3eB5540BfF243c2B57504e0801E02696920E"; // Replace with your referral address
+              const minterArguments = "0x"; // Empty bytes for no additional arguments
+      
+              const mintConfig = {
+                address: contractAddress,
+                abi: ZoraAbi,
+                functionName: 'mintWithRewards',
+                args: [address, quantity, minterArguments, mintReferral],
+                value: parseEther("0.000777"),
+              } as any;  // Add 'as any' to bypass the TypeScript type check
+    
+              const mintHash = await writeContractAsync(mintConfig);
+              if (mintHash) {
+                setMintData(mintHash);
+              } else {
+                throw new Error("Failed to get transaction hash for minting");
+              }
+            }
+          } else {
+            throw new Error("Failed to get transaction hash from contract deployment");
+          }
+    
+          setMintingStep('Waiting for transaction confirmation');
+        } catch (error) {
+          console.error("Error while minting:", error);
+          setMintingError(error instanceof Error ? error.message : String(error));
+        } finally {
+          setIsMinting(false);
         }
-    }, [transactionSuccess]);
+
+
+      useEffect(() => {
+        if (transactionSuccess) {
+          setMintingSuccess(true);
+          setMintingStep('NFT minted successfully!');
+        }
+      }, [transactionSuccess]);
+      
+    };
+
+    
 
     useEffect(() => {
         const canvas = initializeFabric({ canvasRef, fabricRef });
