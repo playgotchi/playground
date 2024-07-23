@@ -251,7 +251,7 @@ const CanvasComponent = () => {
 
           setMintingStep('Deploying contract');
           const deployConfig = {
-            address: zoraNftCreatorV1Config.address[base.id], 
+            address: '0x899ce31dF6C6Af81203AcAaD285bF539234eF4b8' as `0x${string}`,
             abi: ZoraAbi,
             functionName: 'createDropWithReferral' as const, // Define as literal type
             args: [
