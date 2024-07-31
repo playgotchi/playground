@@ -224,81 +224,88 @@ const CanvasComponent = () => {
 
 
     const handleMint = async () => {
+        if (!address) {
+            throw new Error("User address is not available");
+        }
+
         setIsMinting(true);
         setMintingStep('Capturing image');
         setMintingError(null);
     
         try {
+            // Capture image and upload to IPFS
+            console.log("Capturing image from whiteboard...");
             const imageDataUrl = await captureWhiteboard();
-            const imageBlob = await (await fetch(imageDataUrl)).blob();
-    
+
             setMintingStep('Uploading to IPFS');
-            const imageHash = await uploadToIPFS(imageBlob);
+            console.log("Image captured, fetching blob...");
+            const blob = await (await fetch(imageDataUrl)).blob();
+
+            console.log("Blob fetched, uploading to IPFS...");
+            const imageHash = await uploadToIPFS(blob);
     
-            const metadata = createMetadata(imageHash);
-            const metadataHash = await uploadToIPFS(new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-    
+            // Prepare metadata URI
+            console.log("Image uploaded to IPFS, hash:", imageHash);
+            const metadataURI = `ipfs://${imageHash}`;
             setMintingStep('Preparing contract interaction');
     
-            // Encode the mint function call
-          ///  const mintFunctionCall = ethers.utils.defaultAbiCoder.encode(
-          ///      ['address', 'uint256', 'bytes', 'bytes'],
-          ///      [address, 1n, "0x", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
-           /// );
-    
-            // Prepare the createEditionWithReferral function call
-            const createConfig = {
-                address: '0x899ce31dF6C6Af81203AcAaD285bF539234eF4b8' as `0x${string}`, // Zora NFT Creator proxy address
-                abi: ZoraAbi,
-                functionName: 'createEditionWithReferral',
-                args: [
-                    "Playground Pic", // name
-                    "PP", // symbol
-                    BigInt(1), // editionSize
-                    300, // royaltyBPS (3%)
-                    address, // fundsRecipient
-                    address, // defaultAdmin
-                    {
-                        publicSalePrice: BigInt(0), // Adjust as needed
-                        maxSalePurchasePerAddress: 1,
-                        publicSaleStart: BigInt(0),
-                        publicSaleEnd: BigInt(0),
-                        presaleStart: BigInt(0),
-                        presaleEnd: BigInt(0),
-                        presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
-                    }, // saleConfig
-                    "Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", // description
-                    "", // animationURI
-                    imageHash, // imageURI
-                    "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
-                ],
-                
-                } as const;
-    
-            setMintingStep('Sending transaction');
-    
-            await useWriteContract(createConfig as any);
-    
-            setMintingStep('Waiting for confirmation');
-    
-        } catch (error) {
-            console.error("Error while minting:", error);
-            setMintingError(error instanceof Error ? error.message : String(error));
-        } finally {
-            setIsMinting(false);
-        }
-    };
-    
+             // Encode the mint function call as a setup call
+             console.log("Encoding mintWithRewards function call...");
+        const mintSetupCall = encodeFunctionData({
+        abi: ZoraAbi,
+        functionName: 'mintWithRewards',
+        args: [address, BigInt(1), "", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
+    });
+  
+        // Prepare metadata initialization
+        const metadataInitializer = encodeAbiParameters(
+            [{ type: 'string' }, { type: 'string' }],
+            ["Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", metadataURI]
+        );
+      
+      // Prepare the createEditionWithReferral function call
+      console.log("Preparing createEditionWithReferral function call...");
+      const createConfig = {
+        address: '0x899ce31dF6C6Af81203AcAaD285bF539234eF4b8' as `0x${string}`, // ZORA_NFT_CREATOR_PROXY
+        abi: ZoraAbi,
+        functionName: 'createEditionWithReferral',
+        args: [
+            "Playground Pic",
+            "PP",
+            address,
+            BigInt(1),
+            300,
+            address,
+            [mintSetupCall],
+            '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // EDITION_METADATA_RENDERER
+            metadataInitializer,
+            "0x124F3eB5540BfF243c2B57504e0801E02696920E",
+        ],
+        value: parseEther("0.000777"),
+    } as const;
+
+    console.log("Initiating transaction with createConfig:", createConfig);
 
     
-    useEffect(() => {
-        if (transactionSuccess) {
-            setMintingStep('NFT minted successfully!');
-            setMintingSuccess(true);
-        }
-    }, [transactionSuccess]);
-    
+            setMintingStep('Initiating transaction'); 
+            const hash = await writeContractAsync(createConfig as any); 
+            if (hash) { 
+                console.log("Transaction initiated, hash:", hash);
+                setMintData(hash); 
+            setMintingStep('Waiting for transaction confirmation'); 
+            } 
+            else { throw new Error("Failed to get transaction hash from contract deployment and minting"); 
+            } 
+            } 
+            catch (error) { console.error("Error while minting:", error); 
+            setMintingError(error instanceof Error ? error.message : String(error)); 
+            } 
+            finally { setIsMinting(false); } 
+            };
 
+    useEffect(() => { if (transactionSuccess) 
+    { setMintingStep('NFT minted successfully!'); setMintingSuccess(true); } }, 
+    [transactionSuccess]);
     
 
     useEffect(() => {
