@@ -8,7 +8,7 @@ import { handleDelete, handleKeyDown } from "@/lib/key-events";
 import { handleImageUpload } from "@/lib/shapes";
 import { defaultNavElement } from "@/constants";
 import { ActiveElement, Attributes } from "@/types/type";
-import { useAccount, useChainId, usePublicClient, useSimulateContract } from 'wagmi';
+import { useAccount, useChainId, usePublicClient } from 'wagmi';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 
 import Live from "@/components/Live";
@@ -16,27 +16,15 @@ import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
 import { ContractFunctionExecutionError, encodeAbiParameters, encodeFunctionData, parseEther } from 'viem';
 import { ZoraAbi } from '@/lib/zoraABI';
+import { erc721DropABI } from "@zoralabs/zora-721-contracts";
 import { zoraNftCreatorV1Config } from '@zoralabs/zora-721-contracts';
 import { base } from 'wagmi/chains';
 import { waitForTransactionReceipt } from 'viem/actions';
-import html2canvas from 'html2canvas';
 
 
 
 const CanvasComponent = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [capturedImage, setCapturedImage] = useState<string | null>(null);
-    const [isExporting, setIsExporting] = useState(false);
-    const [isMinting, setIsMinting] = useState(false);
-    const [mintingStep, setMintingStep] = useState('');
-    const [mintingError, setMintingError] = useState<string | null>(null);
-    const [mintingSuccess, setMintingSuccess] = useState(false);
-
-    const undo = useUndo();
-    const redo = useRedo();
-
-    const canvasObjects = useStorage((root) => root.canvasObjects);
-
     const fabricRef = useRef<fabric.Canvas | null>(null);
     const isDrawing = useRef(false);
     const shapeRef = useRef<fabric.Object | null>(null);
@@ -56,7 +44,24 @@ const CanvasComponent = () => {
         stroke: "#aabbcc",
     });
 
-  
+    const [capturedImage, setCapturedImage] = useState<string | null>(null);
+    const [isExporting, setIsExporting] = useState(false);
+    const [isMinting, setIsMinting] = useState(false);
+    const [mintingStep, setMintingStep] = useState('');
+    const [mintingError, setMintingError] = useState<string | null>(null);
+    const [mintingSuccess, setMintingSuccess] = useState(false);
+    const [mintData, setMintData] = useState<string | null>(null);
+    const [tokenId, setTokenId] = useState<bigint | null>(null);
+
+
+
+    const undo = useUndo();
+    const redo = useRedo();
+    const canvasObjects = useStorage((root) => root.canvasObjects);
+
+
+
+
     const deleteShapeFromStorage = useMutation(({ storage }, shapeId) => {
         const canvasObjects = storage.get("canvasObjects");
         canvasObjects.delete(shapeId);
@@ -97,8 +102,6 @@ const CanvasComponent = () => {
                 if (fabricRef.current) {
                     fabricRef.current.isDrawingMode = false;
                 }
-                break;
-            case "comments":
                 break;
             default:
                 selectedShapeRef.current = elem?.value as string;
@@ -200,92 +203,138 @@ const CanvasComponent = () => {
           };
         });
       };
+
+    const [deployedContractAddress, setDeployedContractAddress] = useState<string | null>(null);
+
+    const { writeContractAsync } = useWriteContract();
+    const { isLoading: isWaitingForTransaction, isSuccess: transactionSuccess } = useWaitForTransactionReceipt({
+        hash: mintData ? (mintData as `0x${string}`) : undefined,
+      });
+
+      const chainId = useChainId();
+      const publicClient = usePublicClient()!;
+      const { address } = useAccount();
+
+
     const createMetadata = (imageHash: string) => ({
-        name: "Playground Capture",
-        description: "A captured Playground session",
+        name: "Playground Pic",
+        description: "Made with Playground by Playgotchi. (https://playground.playgotchi.com/)",
         image: `ipfs://${imageHash}`
     });
 
 
-    
-    const { address } = useAccount();
-    const chainId = useChainId();
-    const { writeContract } = useWriteContract();
+const handleMint = async () => {
+    if (!address) {
+        throw new Error("User address is not available");
+    }
+    setIsMinting(true);
+    setMintingError(null);
+    setMintingSuccess(false);
+    setMintingStep('Capturing image');
+    try {
+        // Capture image and upload to IPFS
+        console.log("Capturing image from whiteboard...");
 
+        const imageDataUrl = await captureWhiteboard();
+        setMintingStep('Uploading to IPFS');
+        console.log("Image captured, fetching blob...");
+        const blob = await (await fetch(imageDataUrl)).blob();
+        console.log("Blob fetched, uploading to IPFS...");
+        const imageHash = await uploadToIPFS(blob);
+        console.log("Image uploaded to IPFS, hash:", imageHash);
 
-    const handleMint = async () => {
-        if (!address) {
-            alert('Please connect your wallet');
-            return;
-        }
+        // Prepare metadata URI
+        const metadataURI = `ipfs://${imageHash}`;
+        setMintingStep('Preparing transaction');
 
-        if (chainId !== base.id) {
-            alert('Please switch to Base network');
-            return;
-        }
+        // Encode the mintWithRewards function call as a setup call
+        console.log("Encoding mintWithRewards function call...");
+        const mintSetupCall = encodeFunctionData({
+            abi: erc721DropABI,
+            functionName: 'mintWithRewards',
+            args: [address, BigInt(1), "", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
+        });
 
-        setIsMinting(true);
-        setMintingStep('Preparing image...');
-        setMintingError(null);
-        setMintingSuccess(false);
+        // Prepare metadata initialization
+        console.log("Creatinging metadataInitializer...");
+        const metadataInitializer = encodeAbiParameters(
+            [{ type: 'string' }, { type: 'string' }],
+            ["Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", metadataURI]
+        );
 
-        try {
-            // Capture image and upload to IPFS
-            console.log("Capturing image from whiteboard...");
-            const imageDataUrl = await captureWhiteboard();
+        // Prepare the createAndConfigureDrop function call
+        console.log("Preparing createEditionWithReferral function call...");
+        const createConfig = {
+            address: zoraNftCreatorV1Config.address[base.id] as `0x${string}`,
+            abi: zoraNftCreatorV1Config.abi,
+            functionName: 'createAndConfigureDrop',
+            args: [
+                "Playground Pic", // name
+                "PP", // symbol
+                address, // defaultAdmin
+                BigInt(1), // editionSize
+                300, // royaltyBPS
+                address, // fundsRecipient
+                [mintSetupCall], // setupCalls
+                '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
+                metadataInitializer, // metadataInitializer
+                "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
+            ],
+            value: parseEther("0.000777"),
+        } as const;
 
-            setMintingStep('Uploading to IPFS');
-            console.log("Image captured, fetching blob...");
-            const blob = await (await fetch(imageDataUrl)).blob();
+        console.log("createConfig:", JSON.stringify(createConfig, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+        ));
 
-            console.log("Blob fetched, uploading to IPFS...");
-            const imageHash = await uploadToIPFS(blob);
-    
-            const metadataURI = `ipfs://${imageHash}`;
+        setMintingStep('Initiating transaction');
+        const hash = await writeContractAsync(createConfig as any);
 
+        if (hash) {
+            console.log("Transaction initiated, hash:", hash);
+            setMintData(hash);
+            setMintingStep('Waiting for transaction confirmation');
 
-            const { data: simulateData, error: simulateError } = useSimulateContract({
-                address: zoraNftCreatorV1Config.address[base.id], 
-                abi: zoraNftCreatorV1Config.abi,
-                functionName: "createEditionWithReferral",
-                args: [
-                    "Playground Pic",
-                    "PP",
-                    BigInt(1),
-                    0,
-                    address!,
-                    address!,
-                    {
-                        publicSalePrice: BigInt(0),
-                        maxSalePurchasePerAddress: 1,
-                        publicSaleStart: BigInt(0),
-                        publicSaleEnd: BigInt("0xFFFFFFFFFFFFFFFF"),
-                        presaleStart: BigInt(0),
-                        presaleEnd: BigInt(0),
-                        presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
-                    },
-                    "Made with Playground by Playgotchi. (https://playground.playgotchi.com/)",
-                    "",
-                    metadataURI,
-                    "0x124F3eB5540BfF243c2B57504e0801E02696920E",
-                ],
-            });
+            // Wait for the transaction to be mined
+            const receipt = await waitForTransactionReceipt(publicClient, { hash });
 
-            setMintingStep('Minting NFT...');
-            if (simulateData?.request) {
-                await writeContract(simulateData.request);
+            // Check for the CreatedDrop event in the transaction receipt
+            const createdDropEvent = receipt.logs.find(log => 
+                log.topics[0] === '0x5754af5e5da2a42f78041e5277cfb80bd4c4cd124f9bc9e4ddd909c66bbfde39' // keccak256("CreatedDrop(address,address,uint256)")
+            );
+
+            if (createdDropEvent) {
+                const [creator, editionContractAddress, editionSize] = createdDropEvent.topics.slice(1);
+                console.log(`New drop created: ${editionContractAddress}`);
                 setMintingSuccess(true);
+                setMintingStep('Drop created successfully');
             } else {
-                throw new Error('Failed to simulate contract interaction');
+                throw new Error("CreatedDrop event not found in transaction receipt");
             }
-        } catch (error) {
-            console.error('Error minting token:', error);
-            setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
-        } finally {
-            setIsMinting(false);
-            setMintingStep('');
+        } else {
+            throw new Error("Failed to get transaction hash from contract deployment and minting");
         }
-    };
+    } catch (error) {
+        console.error("Error while minting:", error);
+        if (error instanceof ContractFunctionExecutionError) {
+            console.error("Contract error details:", error.cause);
+            setMintingError(`Contract error: ${error.cause?.message || error.message}`);
+        } else {
+            setMintingError(error instanceof Error ? error.message : String(error));
+        }
+    } finally {
+        setIsMinting(false);
+    }
+};
+    
+    useEffect(() => {
+        if (transactionSuccess) {
+            setMintingStep('NFT minted successfully!');
+            setMintingSuccess(true);
+        }
+    }, [transactionSuccess]);
+    
+
     
 
     useEffect(() => {
