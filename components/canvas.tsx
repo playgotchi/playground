@@ -14,7 +14,7 @@ import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
-import { encodeFunctionData, parseEther } from 'viem';
+import { encodeAbiParameters, encodeFunctionData, parseEther } from 'viem';
 import { ZoraAbi } from '@/lib/zoraABI';
 import { zoraNftCreatorV1Config } from '@zoralabs/zora-721-contracts';
 import { base } from 'wagmi/chains';
@@ -251,36 +251,30 @@ const CanvasComponent = () => {
                 args: [address, BigInt(1), "0x", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
             });
     
-            // Prepare the createEditionWithReferral function call
-                   // Prepare the createEditionWithReferral function call
-        const createConfig = {
-            address: '0x899ce31dF6C6Af81203AcAaD285bF539234eF4b8' as `0x${string}`, // Zora NFT Creator proxy address
-            abi: ZoraAbi,
-            functionName: 'createEditionWithReferral',
-            args: [
-                "Playground Pic", // name
-                "PP", // symbol
-                BigInt(1), // editionSize
-                300, // royaltyBPS (3%)
-                address, // fundsRecipient
-                address, // defaultAdmin
-                {
-                    publicSalePrice: BigInt(0), // Adjust as needed
-                    maxSalePurchasePerAddress: 1,
-                    publicSaleStart: BigInt(0),
-                    publicSaleEnd: BigInt(0),
-                    presaleStart: BigInt(0),
-                    presaleEnd: BigInt(0),
-                    presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
-                }, // saleConfig
-                "Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", // description
-                "", // animationURI
-                metadataURI, // imageURI
-                "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
-                [mintSetupCall] // Include the mintSetupCall here
-            ],
-            value: parseEther("0.000777"), // Mint fee
-            
+            // Prepare metadata initialization
+            const metadataInitializer = encodeAbiParameters(
+                [{ type: 'string' }, { type: 'string' }],
+                ["Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", metadataURI]
+            );
+    
+            // Prepare the createAndConfigureDrop function call
+            const createConfig = {
+                address: '0x899ce31dF6C6Af81203AcAaD285bF539234eF4b8' as `0x${string}`, // Zora NFT Creator proxy address
+                abi: ZoraAbi,
+                functionName: 'createAndConfigureDrop',
+                args: [
+                    "Playground Pic", // name
+                    "PP", // symbol
+                    address, // defaultAdmin
+                    BigInt(1), // editionSize
+                    300, // royaltyBPS (3%)
+                    address, // fundsRecipient
+                    [mintSetupCall], // setupCalls
+                    '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // METADATA_RENDERER_ADDRESS (assuming it's the same as the creator proxy)
+                    metadataInitializer,
+                    "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
+                ],
+                value: parseEther("0.000777"), // Mint fee
             } as const;
     
             setMintingStep('Initiating transaction');
@@ -299,7 +293,7 @@ const CanvasComponent = () => {
             setIsMinting(false);
         }
     };
-
+    
     useEffect(() => {
         if (transactionSuccess) {
             setMintingStep('NFT minted successfully!');
