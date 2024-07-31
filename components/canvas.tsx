@@ -298,10 +298,25 @@ const CanvasComponent = () => {
             } 
             } 
             catch (error) { console.error("Error while minting:", error); 
-            setMintingError(error instanceof Error ? error.message : String(error)); 
-            } 
-            finally { setIsMinting(false); } 
-            };
+                if (error instanceof Error) {
+                    if (error.message.includes("insufficient funds")) {
+                        setMintingError("Insufficient funds. Please ensure your wallet has enough ETH to cover the minting cost and gas fees.");
+                    } else if (error.message.includes("user rejected transaction")) {
+                        setMintingError("Transaction was rejected. Please try again and confirm the transaction in your wallet.");
+                    } else if (error.message.includes("execution reverted")) {
+                        setMintingError("The transaction was reverted by the contract. This might be due to failing to meet certain conditions. Please check your inputs and try again.");
+                    } else if (error.message.includes("invalid input")) {
+                        setMintingError("Invalid input detected. Please check all parameters and try again.");
+                    } else {
+                        setMintingError(`An unexpected error occurred: ${error.message}`);
+                    }
+                } else {
+                    setMintingError("An unknown error occurred. Please try again later.");
+                }
+            } finally {
+                setIsMinting(false);
+            }
+        };
 
     useEffect(() => { if (transactionSuccess) 
     { setMintingStep('NFT minted successfully!'); setMintingSuccess(true); } }, 
