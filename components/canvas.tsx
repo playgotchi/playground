@@ -8,9 +8,8 @@ import { handleDelete, handleKeyDown } from "@/lib/key-events";
 import { handleImageUpload } from "@/lib/shapes";
 import { defaultNavElement } from "@/constants";
 import { ActiveElement, Attributes } from "@/types/type";
-import { useAccount, useChainId, usePublicClient } from 'wagmi';
+import { useAccount, useChainId, usePublicClient, useSimulateContract } from 'wagmi';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { ethers } from 'ethers';
 
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
@@ -20,11 +19,24 @@ import { ZoraAbi } from '@/lib/zoraABI';
 import { zoraNftCreatorV1Config } from '@zoralabs/zora-721-contracts';
 import { base } from 'wagmi/chains';
 import { waitForTransactionReceipt } from 'viem/actions';
+import html2canvas from 'html2canvas';
 
 
 
 const CanvasComponent = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [capturedImage, setCapturedImage] = useState<string | null>(null);
+    const [isExporting, setIsExporting] = useState(false);
+    const [isMinting, setIsMinting] = useState(false);
+    const [mintingStep, setMintingStep] = useState('');
+    const [mintingError, setMintingError] = useState<string | null>(null);
+    const [mintingSuccess, setMintingSuccess] = useState(false);
+
+    const undo = useUndo();
+    const redo = useRedo();
+
+    const canvasObjects = useStorage((root) => root.canvasObjects);
+
     const fabricRef = useRef<fabric.Canvas | null>(null);
     const isDrawing = useRef(false);
     const shapeRef = useRef<fabric.Object | null>(null);
@@ -44,24 +56,37 @@ const CanvasComponent = () => {
         stroke: "#aabbcc",
     });
 
-    const [capturedImage, setCapturedImage] = useState<string | null>(null);
-    const [isExporting, setIsExporting] = useState(false);
-    const [isMinting, setIsMinting] = useState(false);
-    const [mintingStep, setMintingStep] = useState('');
-    const [mintingError, setMintingError] = useState<string | null>(null);
-    const [mintingSuccess, setMintingSuccess] = useState(false);
-    const [mintData, setMintData] = useState<string | null>(null);
-    const [tokenId, setTokenId] = useState<bigint | null>(null);
+    const { address } = useAccount();
+    const chainId = useChainId();
+    const { writeContract } = useWriteContract();
 
-
-
-    const undo = useUndo();
-    const redo = useRedo();
-    const canvasObjects = useStorage((root) => root.canvasObjects);
-
-
-
-
+    const { data: simulateData, error: simulateError } = useSimulateContract({
+      address: zoraNftCreatorV1Config.address[base.id], 
+      abi: zoraNftCreatorV1Config.abi,
+      functionName: "createEditionWithReferral",
+      args: [
+          "Playground Pic",
+          "PP",
+          BigInt(1),
+          0,
+          address!,
+          address!,
+          {
+              publicSalePrice: BigInt(0),
+              maxSalePurchasePerAddress: 1,
+              publicSaleStart: BigInt(0),
+              publicSaleEnd: BigInt("0xFFFFFFFFFFFFFFFF"),
+              presaleStart: BigInt(0),
+              presaleEnd: BigInt(0),
+              presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "Playground Powered by Playgotchi",
+          "",
+          address!,
+          "0x124F3eB5540BfF243c2B57504e0801E02696920E",
+      ],
+  });
+  
     const deleteShapeFromStorage = useMutation(({ storage }, shapeId) => {
         const canvasObjects = storage.get("canvasObjects");
         canvasObjects.delete(shapeId);
@@ -103,49 +128,26 @@ const CanvasComponent = () => {
                     fabricRef.current.isDrawingMode = false;
                 }
                 break;
+            case "comments":
+                break;
             default:
                 selectedShapeRef.current = elem?.value as string;
                 break;
         }
     };
 
-    const captureWhiteboard = async (aspectRatio: number = 1.91): Promise<string> => {
-        if (!fabricRef.current) throw new Error('Canvas not initialized');
+    const captureWhiteboard = async (): Promise<string> => {
+        const canvas = document.querySelector('main');
+        if (!canvas) throw new Error('Canvas element not found');
 
         try {
-            const canvas = fabricRef.current;
-            const originalWidth = canvas.getWidth();
-            const originalHeight = canvas.getHeight();
-
-            let newWidth, newHeight;
-            if (originalWidth / originalHeight > aspectRatio) {
-                newHeight = originalHeight;
-                newWidth = newHeight * aspectRatio;
-            } else {
-                newWidth = originalWidth;
-                newHeight = newWidth / aspectRatio;
-            }
-
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = newWidth;
-            tempCanvas.height = newHeight;
-
-            const ctx = tempCanvas.getContext('2d');
-            if (!ctx) throw new Error('Failed to get 2D context');
-
-            ctx.fillStyle = '#020817';
-            ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-            canvas.renderAll();
-            const fabricCanvas = canvas.getElement();
-
-            const scale = Math.min(newWidth / originalWidth, newHeight / originalHeight);
-            const x = (newWidth - originalWidth * scale) / 2;
-            const y = (newHeight - originalHeight * scale) / 2;
-
-            ctx.drawImage(fabricCanvas, x, y, originalWidth * scale, originalHeight * scale);
-
-            return tempCanvas.toDataURL('image/png');
+            const captureCanvas = await html2canvas(canvas, {
+                scale: 2,
+                useCORS: true,
+                logging: true,
+                backgroundColor: '#f1f5f9',
+            });
+            return captureCanvas.toDataURL('image/png');
         } catch (error) {
             console.error('Failed to capture whiteboard:', error);
             throw error;
@@ -172,7 +174,7 @@ const CanvasComponent = () => {
 
             const link = document.createElement('a');
             link.href = imageDataUrl;
-            link.download = 'playground-export.png';
+            link.download = 'whiteboard-export.png';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -183,6 +185,7 @@ const CanvasComponent = () => {
             setIsExporting(false);
         }
     };
+
     const uploadToIPFS = async (blob: Blob): Promise<string> => {
         const reader = new FileReader();
         reader.readAsDataURL(blob);
@@ -203,124 +206,63 @@ const CanvasComponent = () => {
           };
         });
       };
-
-    const [deployedContractAddress, setDeployedContractAddress] = useState<string | null>(null);
-
-    const { writeContractAsync } = useWriteContract();
-    const { isLoading: isWaitingForTransaction, isSuccess: transactionSuccess } = useWaitForTransactionReceipt({
-        hash: mintData ? (mintData as `0x${string}`) : undefined,
-      });
-
-      const chainId = useChainId();
-      const publicClient = usePublicClient()!;
-      const { address } = useAccount();
-
-
     const createMetadata = (imageHash: string) => ({
-        name: "Playground Pic",
-        description: "Made with Playground by Playgotchi. (https://playground.playgotchi.com/)",
+        name: "Playground Capture",
+        description: "A captured Playground session",
         image: `ipfs://${imageHash}`
     });
 
-
     const handleMint = async () => {
+        if (!capturedImage) {
+            alert('Please capture the whiteboard before minting.');
+            return;
+        }
+
         if (!address) {
-            throw new Error("User address is not available");
+            alert('Please connect your wallet');
+            return;
+        }
+
+        if (chainId !== base.id) {
+            alert('Please switch to Base network');
+            return;
         }
 
         setIsMinting(true);
-        setMintingStep('Capturing image');
+        setMintingStep('Preparing image...');
         setMintingError(null);
-    
+        setMintingSuccess(false);
+
         try {
-            // Capture image and upload to IPFS
-            console.log("Capturing image from whiteboard...");
-            const imageDataUrl = await captureWhiteboard();
+            const response = await fetch(capturedImage);
+            const blob = await response.blob();
 
-            setMintingStep('Uploading to IPFS');
-            console.log("Image captured, fetching blob...");
-            const blob = await (await fetch(imageDataUrl)).blob();
-
-            console.log("Blob fetched, uploading to IPFS...");
+            setMintingStep('Uploading image to IPFS...');
             const imageHash = await uploadToIPFS(blob);
-    
-            // Prepare metadata URI
-            console.log("Image uploaded to IPFS, hash:", imageHash);
-            const metadataURI = `ipfs://${imageHash}`;
-            setMintingStep('Preparing contract interaction');
-    
-             // Encode the mint function call as a setup call
-             console.log("Encoding mintWithRewards function call...");
-        const mintSetupCall = encodeFunctionData({
-        abi: ZoraAbi,
-        functionName: 'mintWithRewards',
-        args: [address, BigInt(1), "", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
-    });
-  
-        // Prepare metadata initialization
-        const metadataInitializer = encodeAbiParameters(
-            [{ type: 'string' }, { type: 'string' }],
-            ["Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", metadataURI]
-        );
-      
-      // Prepare the createEditionWithReferral function call
-      console.log("Preparing createEditionWithReferral function call...");
-      const createConfig = {
-        address: '0x899ce31dF6C6Af81203AcAaD285bF539234eF4b8' as `0x${string}`, // ZORA_NFT_CREATOR_PROXY
-        abi: ZoraAbi,
-        functionName: 'createEditionWithReferral',
-        args: [
-            "Playground Pic",
-            "PP",
-            address,
-            BigInt(1),
-            300,
-            address,
-            [mintSetupCall],
-            '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // EDITION_METADATA_RENDERER
-            metadataInitializer,
-            "0x124F3eB5540BfF243c2B57504e0801E02696920E",
-        ],
-        value: parseEther("0.000777"),
-    } as const;
+            console.log(`Pinned image to IPFS: ${imageHash}`);
 
-    console.log("Initiating transaction with createConfig:", createConfig);
+            setMintingStep('Creating metadata...');
+            const metadata = createMetadata(imageHash);
+            const metadataContent = JSON.stringify(metadata);
+            const metadataBlob = new Blob([metadataContent], { type: 'application/json' });
+            const metadataHash = await uploadToIPFS(metadataBlob);
+            console.log(`Pinned metadata to IPFS: ${metadataHash}`); 
 
-    
-            setMintingStep('Initiating transaction'); 
-            const hash = await writeContractAsync(createConfig as any); 
-            if (hash) { 
-                console.log("Transaction initiated, hash:", hash);
-                setMintData(hash); 
-            setMintingStep('Waiting for transaction confirmation'); 
-            } 
-            else { throw new Error("Failed to get transaction hash from contract deployment and minting"); 
-            } 
-            } 
-            catch (error) { console.error("Error while minting:", error); 
-                if (error instanceof Error) {
-                    if (error.message.includes("insufficient funds")) {
-                        setMintingError("Insufficient funds. Please ensure your wallet has enough ETH to cover the minting cost and gas fees.");
-                    } else if (error.message.includes("user rejected transaction")) {
-                        setMintingError("Transaction was rejected. Please try again and confirm the transaction in your wallet.");
-                    } else if (error.message.includes("execution reverted")) {
-                        setMintingError("The transaction was reverted by the contract. This might be due to failing to meet certain conditions. Please check your inputs and try again.");
-                    } else if (error.message.includes("invalid input")) {
-                        setMintingError("Invalid input detected. Please check all parameters and try again.");
-                    } else {
-                        setMintingError(`An unexpected error occurred: ${error.message}`);
-                    }
-                } else {
-                    setMintingError("An unknown error occurred. Please try again later.");
-                }
-            } finally {
-                setIsMinting(false);
+            setMintingStep('Minting NFT...');
+            if (simulateData?.request) {
+                await writeContract(simulateData.request);
+                setMintingSuccess(true);
+            } else {
+                throw new Error('Failed to simulate contract interaction');
             }
-        };
-
-    useEffect(() => { if (transactionSuccess) 
-    { setMintingStep('NFT minted successfully!'); setMintingSuccess(true); } }, 
-    [transactionSuccess]);
+        } catch (error) {
+            console.error('Error minting token:', error);
+            setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
+        } finally {
+            setIsMinting(false);
+            setMintingStep('');
+        }
+    };
     
 
     useEffect(() => {
