@@ -14,7 +14,7 @@ import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
-import { encodeAbiParameters, encodeFunctionData, parseEther } from 'viem';
+import { ContractFunctionExecutionError, encodeAbiParameters, encodeFunctionData, parseEther } from 'viem';
 import { ZoraAbi } from '@/lib/zoraABI';
 import { zoraNftCreatorV1Config } from '@zoralabs/zora-721-contracts';
 import { base } from 'wagmi/chains';
@@ -257,25 +257,33 @@ const CanvasComponent = () => {
                 ["Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", metadataURI]
             );
     
+            // Input validation
+            if (BigInt(1) <= 0) throw new Error("Invalid edition size");
+            if (300 < 0 || 300 > 10000) throw new Error("Invalid royalty BPS");
+    
             // Prepare the createAndConfigureDrop function call
             const createConfig = {
-                address: '0x899ce31dF6C6Af81203AcAaD285bF539234eF4b8' as `0x${string}`, // Zora NFT Creator proxy address
+                address: '0x899ce31dF6C6Af81203AcAaD285bF539234eF4b8' as `0x${string}`, // ZORA_NFT_CREATOR_PROXY
                 abi: ZoraAbi,
                 functionName: 'createAndConfigureDrop',
                 args: [
-                    "Playground Pic", // name
-                    "PP", // symbol
-                    address, // defaultAdmin
-                    BigInt(1), // editionSize
-                    300, // royaltyBPS (3%)
-                    address, // fundsRecipient
-                    [mintSetupCall], // setupCalls
-                    '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // METADATA_RENDERER_ADDRESS (assuming it's the same as the creator proxy)
+                    "Playground Pic",
+                    "PP",
+                    address,
+                    BigInt(1),
+                    300,
+                    address,
+                    [mintSetupCall],
+                    '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // EDITION_METADATA_RENDERER
                     metadataInitializer,
-                    "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
+                    "0x124F3eB5540BfF243c2B57504e0801E02696920E",
                 ],
-                value: parseEther("0.000777"), // Mint fee
+                value: parseEther("0.000777"),
             } as const;
+    
+            console.log("createConfig:", JSON.stringify(createConfig, (key, value) =>
+                typeof value === 'bigint' ? value.toString() : value
+            ));
     
             setMintingStep('Initiating transaction');
             const hash = await writeContractAsync(createConfig as any);
@@ -288,7 +296,12 @@ const CanvasComponent = () => {
             }
         } catch (error) {
             console.error("Error while minting:", error);
-            setMintingError(error instanceof Error ? error.message : String(error));
+            if (error instanceof ContractFunctionExecutionError) {
+                console.error("Contract error details:", error.cause);
+                setMintingError(`Contract error: ${error.cause?.message || error.message}`);
+            } else {
+                setMintingError(error instanceof Error ? error.message : String(error));
+            }
         } finally {
             setIsMinting(false);
         }
