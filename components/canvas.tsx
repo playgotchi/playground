@@ -10,6 +10,7 @@ import { defaultNavElement } from "@/constants";
 import { ActiveElement, Attributes } from "@/types/type";
 import { useAccount, useChainId, usePublicClient } from 'wagmi';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { ethers } from 'ethers';
 
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
@@ -223,74 +224,63 @@ const CanvasComponent = () => {
 
 
     const handleMint = async () => {
-        if (!address) {
-            throw new Error("User address is not available");
-        }
-    
         setIsMinting(true);
-        setMintingError(null);
-        setMintingSuccess(false);
         setMintingStep('Capturing image');
+        setMintingError(null);
     
         try {
-            // Capture image and upload to IPFS
             const imageDataUrl = await captureWhiteboard();
+            const imageBlob = await (await fetch(imageDataUrl)).blob();
+    
             setMintingStep('Uploading to IPFS');
-            const blob = await (await fetch(imageDataUrl)).blob();
-            const imageHash = await uploadToIPFS(blob);
+            const imageHash = await uploadToIPFS(imageBlob);
     
-            // Prepare metadata URI
-            const metadataURI = `ipfs://${imageHash}`;
+            const metadata = createMetadata(imageHash);
+            const metadataHash = await uploadToIPFS(new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
     
-            setMintingStep('Preparing transaction');
+            setMintingStep('Preparing contract interaction');
     
-            // Encode the mint function call as a setup call
-            const mintSetupCall = encodeFunctionData({
-                abi: ZoraAbi,
-                functionName: 'mintWithRewards',
-                args: [address, BigInt(1), "0x", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
-            });
+            // Encode the mint function call
+          ///  const mintFunctionCall = ethers.utils.defaultAbiCoder.encode(
+          ///      ['address', 'uint256', 'bytes', 'bytes'],
+          ///      [address, 1n, "0x", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
+           /// );
     
             // Prepare the createEditionWithReferral function call
-                   // Prepare the createEditionWithReferral function call
-        const createConfig = {
-            address: '0x899ce31dF6C6Af81203AcAaD285bF539234eF4b8' as `0x${string}`, // Zora NFT Creator proxy address
-            abi: ZoraAbi,
-            functionName: 'createEditionWithReferral',
-            args: [
-                "Playground Pic", // name
-                "PP", // symbol
-                BigInt(1), // editionSize
-                300, // royaltyBPS (3%)
-                address, // fundsRecipient
-                address, // defaultAdmin
-                {
-                    publicSalePrice: BigInt(0), // Adjust as needed
-                    maxSalePurchasePerAddress: 1,
-                    publicSaleStart: BigInt(0),
-                    publicSaleEnd: BigInt(0),
-                    presaleStart: BigInt(0),
-                    presaleEnd: BigInt(0),
-                    presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
-                }, // saleConfig
-                "Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", // description
-                "", // animationURI
-                metadataURI, // imageURI
-                "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
-            ],
-            value: parseEther("0.000777"), // Mint fee
-            
-            } as const;
+            const createConfig = {
+                address: '0x899ce31dF6C6Af81203AcAaD285bF539234eF4b8' as `0x${string}`, // Zora NFT Creator proxy address
+                abi: ZoraAbi,
+                functionName: 'createEditionWithReferral',
+                args: [
+                    "Playground Pic", // name
+                    "PP", // symbol
+                    BigInt(1), // editionSize
+                    300, // royaltyBPS (3%)
+                    address, // fundsRecipient
+                    address, // defaultAdmin
+                    {
+                        publicSalePrice: BigInt(0), // Adjust as needed
+                        maxSalePurchasePerAddress: 1,
+                        publicSaleStart: BigInt(0),
+                        publicSaleEnd: BigInt(0),
+                        presaleStart: BigInt(0),
+                        presaleEnd: BigInt(0),
+                        presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
+                    }, // saleConfig
+                    "Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", // description
+                    "", // animationURI
+                    imageHash, // imageURI
+                    "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
+                ],
+                
+                } as const;
     
-            setMintingStep('Initiating transaction');
-            const hash = await writeContractAsync(createConfig as any);
+            setMintingStep('Sending transaction');
     
-            if (hash) {
-                setMintData(hash);
-                setMintingStep('Waiting for transaction confirmation');
-            } else {
-                throw new Error("Failed to get transaction hash from contract deployment and minting");
-            }
+            await useWriteContract(createConfig as any);
+    
+            setMintingStep('Waiting for confirmation');
+    
         } catch (error) {
             console.error("Error while minting:", error);
             setMintingError(error instanceof Error ? error.message : String(error));
@@ -298,6 +288,7 @@ const CanvasComponent = () => {
             setIsMinting(false);
         }
     };
+    
 
     
     useEffect(() => {
