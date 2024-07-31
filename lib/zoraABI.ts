@@ -456,11 +456,6 @@ export const ZoraAbi = [
                 "internalType": "address",
                 "name": "createReferral",
                 "type": "address"
-            },
-            {
-                "internalType": "bytes[]",
-                "name": "setupCalls",
-                "type": "bytes[]"
             }
         ],
         "name": "createEditionWithReferral",

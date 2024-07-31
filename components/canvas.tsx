@@ -277,7 +277,6 @@ const CanvasComponent = () => {
                 "", // animationURI
                 metadataURI, // imageURI
                 "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
-                [mintSetupCall] // Include the mintSetupCall here
             ],
             value: parseEther("0.000777"), // Mint fee
             
