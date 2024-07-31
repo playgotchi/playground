@@ -251,39 +251,37 @@ const CanvasComponent = () => {
                 args: [address, BigInt(1), "0x", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
             });
     
-            // Prepare metadata initialization
-            const metadataInitializer = encodeAbiParameters(
-                [{ type: 'string' }, { type: 'string' }],
-                ["Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", metadataURI]
-            );
-    
-            // Input validation
-            if (BigInt(1) <= 0) throw new Error("Invalid edition size");
-            if (300 < 0 || 300 > 10000) throw new Error("Invalid royalty BPS");
-    
-            // Prepare the createAndConfigureDrop function call
-            const createConfig = {
-                address: '0x899ce31dF6C6Af81203AcAaD285bF539234eF4b8' as `0x${string}`, // ZORA_NFT_CREATOR_PROXY
-                abi: ZoraAbi,
-                functionName: 'createAndConfigureDrop',
-                args: [
-                    "Playground Pic",
-                    "PP",
-                    address,
-                    BigInt(1),
-                    300,
-                    address,
-                    [mintSetupCall],
-                    '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // EDITION_METADATA_RENDERER
-                    metadataInitializer,
-                    "0x124F3eB5540BfF243c2B57504e0801E02696920E",
-                ],
-                value: parseEther("0.000777"),
+            // Prepare the createEditionWithReferral function call
+                   // Prepare the createEditionWithReferral function call
+        const createConfig = {
+            address: '0x899ce31dF6C6Af81203AcAaD285bF539234eF4b8' as `0x${string}`, // Zora NFT Creator proxy address
+            abi: ZoraAbi,
+            functionName: 'createEditionWithReferral',
+            args: [
+                "Playground Pic", // name
+                "PP", // symbol
+                BigInt(1), // editionSize
+                300, // royaltyBPS (3%)
+                address, // fundsRecipient
+                address, // defaultAdmin
+                {
+                    publicSalePrice: BigInt(0), // Adjust as needed
+                    maxSalePurchasePerAddress: 1,
+                    publicSaleStart: BigInt(0),
+                    publicSaleEnd: BigInt(0),
+                    presaleStart: BigInt(0),
+                    presaleEnd: BigInt(0),
+                    presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
+                }, // saleConfig
+                "Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", // description
+                "", // animationURI
+                metadataURI, // imageURI
+                "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
+                [mintSetupCall] // Include the mintSetupCall here
+            ],
+            value: parseEther("0.000777"), // Mint fee
+            
             } as const;
-    
-            console.log("createConfig:", JSON.stringify(createConfig, (key, value) =>
-                typeof value === 'bigint' ? value.toString() : value
-            ));
     
             setMintingStep('Initiating transaction');
             const hash = await writeContractAsync(createConfig as any);
@@ -296,16 +294,12 @@ const CanvasComponent = () => {
             }
         } catch (error) {
             console.error("Error while minting:", error);
-            if (error instanceof ContractFunctionExecutionError) {
-                console.error("Contract error details:", error.cause);
-                setMintingError(`Contract error: ${error.cause?.message || error.message}`);
-            } else {
-                setMintingError(error instanceof Error ? error.message : String(error));
-            }
+            setMintingError(error instanceof Error ? error.message : String(error));
         } finally {
             setIsMinting(false);
         }
     };
+
     
     useEffect(() => {
         if (transactionSuccess) {
