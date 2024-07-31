@@ -56,36 +56,6 @@ const CanvasComponent = () => {
         stroke: "#aabbcc",
     });
 
-    const { address } = useAccount();
-    const chainId = useChainId();
-    const { writeContract } = useWriteContract();
-
-    const { data: simulateData, error: simulateError } = useSimulateContract({
-      address: zoraNftCreatorV1Config.address[base.id], 
-      abi: zoraNftCreatorV1Config.abi,
-      functionName: "createEditionWithReferral",
-      args: [
-          "Playground Pic",
-          "PP",
-          BigInt(1),
-          0,
-          address!,
-          address!,
-          {
-              publicSalePrice: BigInt(0),
-              maxSalePurchasePerAddress: 1,
-              publicSaleStart: BigInt(0),
-              publicSaleEnd: BigInt("0xFFFFFFFFFFFFFFFF"),
-              presaleStart: BigInt(0),
-              presaleEnd: BigInt(0),
-              presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
-          },
-          "Playground Powered by Playgotchi",
-          "",
-          address!,
-          "0x124F3eB5540BfF243c2B57504e0801E02696920E",
-      ],
-  });
   
     const deleteShapeFromStorage = useMutation(({ storage }, shapeId) => {
         const canvasObjects = storage.get("canvasObjects");
@@ -136,18 +106,43 @@ const CanvasComponent = () => {
         }
     };
 
-    const captureWhiteboard = async (): Promise<string> => {
-        const canvas = document.querySelector('main');
-        if (!canvas) throw new Error('Canvas element not found');
+    const captureWhiteboard = async (aspectRatio: number = 1.91): Promise<string> => {
+        if (!fabricRef.current) throw new Error('Canvas not initialized');
 
         try {
-            const captureCanvas = await html2canvas(canvas, {
-                scale: 2,
-                useCORS: true,
-                logging: true,
-                backgroundColor: '#f1f5f9',
-            });
-            return captureCanvas.toDataURL('image/png');
+            const canvas = fabricRef.current;
+            const originalWidth = canvas.getWidth();
+            const originalHeight = canvas.getHeight();
+
+            let newWidth, newHeight;
+            if (originalWidth / originalHeight > aspectRatio) {
+                newHeight = originalHeight;
+                newWidth = newHeight * aspectRatio;
+            } else {
+                newWidth = originalWidth;
+                newHeight = newWidth / aspectRatio;
+            }
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = newWidth;
+            tempCanvas.height = newHeight;
+
+            const ctx = tempCanvas.getContext('2d');
+            if (!ctx) throw new Error('Failed to get 2D context');
+
+            ctx.fillStyle = '#020817';
+            ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+            canvas.renderAll();
+            const fabricCanvas = canvas.getElement();
+
+            const scale = Math.min(newWidth / originalWidth, newHeight / originalHeight);
+            const x = (newWidth - originalWidth * scale) / 2;
+            const y = (newHeight - originalHeight * scale) / 2;
+
+            ctx.drawImage(fabricCanvas, x, y, originalWidth * scale, originalHeight * scale);
+
+            return tempCanvas.toDataURL('image/png');
         } catch (error) {
             console.error('Failed to capture whiteboard:', error);
             throw error;
@@ -174,7 +169,7 @@ const CanvasComponent = () => {
 
             const link = document.createElement('a');
             link.href = imageDataUrl;
-            link.download = 'whiteboard-export.png';
+            link.download = 'playground-export.png';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -185,7 +180,6 @@ const CanvasComponent = () => {
             setIsExporting(false);
         }
     };
-
     const uploadToIPFS = async (blob: Blob): Promise<string> => {
         const reader = new FileReader();
         reader.readAsDataURL(blob);
@@ -212,12 +206,14 @@ const CanvasComponent = () => {
         image: `ipfs://${imageHash}`
     });
 
-    const handleMint = async () => {
-        if (!capturedImage) {
-            alert('Please capture the whiteboard before minting.');
-            return;
-        }
 
+    
+    const { address } = useAccount();
+    const chainId = useChainId();
+    const { writeContract } = useWriteContract();
+
+
+    const handleMint = async () => {
         if (!address) {
             alert('Please connect your wallet');
             return;
@@ -234,19 +230,46 @@ const CanvasComponent = () => {
         setMintingSuccess(false);
 
         try {
-            const response = await fetch(capturedImage);
-            const blob = await response.blob();
+            // Capture image and upload to IPFS
+            console.log("Capturing image from whiteboard...");
+            const imageDataUrl = await captureWhiteboard();
 
-            setMintingStep('Uploading image to IPFS...');
+            setMintingStep('Uploading to IPFS');
+            console.log("Image captured, fetching blob...");
+            const blob = await (await fetch(imageDataUrl)).blob();
+
+            console.log("Blob fetched, uploading to IPFS...");
             const imageHash = await uploadToIPFS(blob);
-            console.log(`Pinned image to IPFS: ${imageHash}`);
+    
+            const metadataURI = `ipfs://${imageHash}`;
 
-            setMintingStep('Creating metadata...');
-            const metadata = createMetadata(imageHash);
-            const metadataContent = JSON.stringify(metadata);
-            const metadataBlob = new Blob([metadataContent], { type: 'application/json' });
-            const metadataHash = await uploadToIPFS(metadataBlob);
-            console.log(`Pinned metadata to IPFS: ${metadataHash}`); 
+
+            const { data: simulateData, error: simulateError } = useSimulateContract({
+                address: zoraNftCreatorV1Config.address[base.id], 
+                abi: zoraNftCreatorV1Config.abi,
+                functionName: "createEditionWithReferral",
+                args: [
+                    "Playground Pic",
+                    "PP",
+                    BigInt(1),
+                    0,
+                    address!,
+                    address!,
+                    {
+                        publicSalePrice: BigInt(0),
+                        maxSalePurchasePerAddress: 1,
+                        publicSaleStart: BigInt(0),
+                        publicSaleEnd: BigInt("0xFFFFFFFFFFFFFFFF"),
+                        presaleStart: BigInt(0),
+                        presaleEnd: BigInt(0),
+                        presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
+                    },
+                    "Made with Playground by Playgotchi. (https://playground.playgotchi.com/)",
+                    "",
+                    metadataURI,
+                    "0x124F3eB5540BfF243c2B57504e0801E02696920E",
+                ],
+            });
 
             setMintingStep('Minting NFT...');
             if (simulateData?.request) {
