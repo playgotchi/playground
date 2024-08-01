@@ -15,7 +15,6 @@ import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
 import { ContractFunctionExecutionError, encodeAbiParameters, encodeFunctionData, parseEther } from 'viem';
-import { ZoraAbi } from '@/lib/zoraABI';
 import { erc721DropABI } from "@zoralabs/zora-721-contracts";
 import { zoraNftCreatorV1Config } from '@zoralabs/zora-721-contracts';
 import { base } from 'wagmi/chains';
@@ -223,116 +222,167 @@ const CanvasComponent = () => {
     });
 
 
-const handleMint = async () => {
-    if (!address) {
-        throw new Error("User address is not available");
-    }
-    setIsMinting(true);
-    setMintingError(null);
-    setMintingSuccess(false);
-    setMintingStep('Capturing image');
-    try {
-        // Capture image and upload to IPFS
-        console.log("Capturing image from whiteboard...");
-
-        const imageDataUrl = await captureWhiteboard();
-        setMintingStep('Uploading to IPFS');
-        console.log("Image captured, fetching blob...");
-        const blob = await (await fetch(imageDataUrl)).blob();
-        console.log("Blob fetched, uploading to IPFS...");
-        const imageHash = await uploadToIPFS(blob);
-        console.log("Image uploaded to IPFS, hash:", imageHash);
-
-        // Prepare metadata URI
-        const metadataURI = `ipfs://${imageHash}`;
-        setMintingStep('Preparing transaction');
-
-        // Encode the mintWithRewards function call as a setup call
-        console.log("Encoding mintWithRewards function call...");
-        const mintSetupCall = encodeFunctionData({
-            abi: erc721DropABI,
-            functionName: 'mintWithRewards',
-            args: [address, BigInt(1), "", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
-        });
-
-        // Prepare metadata initialization
-        console.log("Creatinging metadataInitializer...");
-        const metadataInitializer = encodeAbiParameters(
-            [{ type: 'string' }, { type: 'string' }],
-            ["Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", metadataURI]
-        );
-
-        // Prepare the createAndConfigureDrop function call
-        console.log("Preparing createEditionWithReferral function call...");
-        const createConfig = {
-            address: zoraNftCreatorV1Config.address[base.id] as `0x${string}`,
-            abi: zoraNftCreatorV1Config.abi,
-            functionName: 'createAndConfigureDrop',
-            args: [
-                "Playground Pic", // name
-                "PP", // symbol
-                address, // defaultAdmin
-                BigInt(1), // editionSize
-                300, // royaltyBPS
-                address, // fundsRecipient
-                [mintSetupCall], // setupCalls
-                '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
-                metadataInitializer, // metadataInitializer
-                "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
-            ],
-            value: parseEther("0.000777"),
-        } as const;
-
-        console.log("createConfig:", JSON.stringify(createConfig, (key, value) =>
-            typeof value === 'bigint' ? value.toString() : value
-        ));
-
-        setMintingStep('Initiating transaction');
-        const hash = await writeContractAsync(createConfig as any);
-
-        if (hash) {
-            console.log("Transaction initiated, hash:", hash);
-            setMintData(hash);
-            setMintingStep('Waiting for transaction confirmation');
-
-            // Wait for the transaction to be mined
-            const receipt = await waitForTransactionReceipt(publicClient, { hash });
-
-            // Check for the CreatedDrop event in the transaction receipt
-            const createdDropEvent = receipt.logs.find(log => 
-                log.topics[0] === '0x5754af5e5da2a42f78041e5277cfb80bd4c4cd124f9bc9e4ddd909c66bbfde39' // keccak256("CreatedDrop(address,address,uint256)")
-            );
-
-            if (createdDropEvent) {
-                const [creator, editionContractAddress, editionSize] = createdDropEvent.topics.slice(1);
-                console.log(`New drop created: ${editionContractAddress}`);
-                setMintingSuccess(true);
-                setMintingStep('Drop created successfully');
-            } else {
-                throw new Error("CreatedDrop event not found in transaction receipt");
-            }
-        } else {
-            throw new Error("Failed to get transaction hash from contract deployment and minting");
+    const handleMint = async () => {
+        if (!address) {
+            throw new Error("User address is not available");
         }
-    } catch (error) {
-        console.error("Error while minting:", error);
-        if (error instanceof ContractFunctionExecutionError) {
-            console.error("Contract error details:", error.cause);
-            setMintingError(`Contract error: ${error.cause?.message || error.message}`);
-        } else {
-            setMintingError(error instanceof Error ? error.message : String(error));
-        }
-    } finally {
-        setIsMinting(false);
-    }
-};
+        setIsMinting(true);
+        setMintingError(null);
+        setMintingSuccess(false);
+        setMintingStep('Capturing image');
     
-    useEffect(() => {
-        if (transactionSuccess) {
-            setMintingStep('NFT minted successfully!');
-            setMintingSuccess(true);
+        try {
+            // Capture image and upload to IPFS
+            console.log("Capturing image from whiteboard...");
+            const imageDataUrl = await captureWhiteboard();
+            setMintingStep('Uploading to IPFS');
+            console.log("Image captured, fetching blob...");
+
+            const blob = await (await fetch(imageDataUrl)).blob();
+            console.log("Blob fetched, uploading to IPFS...");
+
+            const imageHash = await uploadToIPFS(blob);
+            console.log("Image uploaded to IPFS, hash:", imageHash);
+
+            const metadataURI = `ipfs://${imageHash}`;
+            setMintingStep('Preparing transaction');
+    
+            // Encode the mintWithRewards function call
+            console.log("Encoding mintWithRewards function call...");
+            const setupCalls = encodeFunctionData({
+                abi: erc721DropABI,
+                functionName: 'mintWithRewards',
+                args: [address, BigInt(1), "", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
+            });
+
+            
+            console.log("Creating metadataInitializer...");
+            const metadataInitializer = encodeAbiParameters(
+                [{ type: 'string' }, { type: 'string' }],
+                ["Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", metadataURI]
+            );
+    
+            // Encode the createAndConfigureDrop function call
+            console.log("Preparing createAndConfigureDrop function call...");
+            const createDropData = encodeFunctionData({
+                abi: zoraNftCreatorV1Config.abi,
+                functionName: 'createAndConfigureDrop',
+                args: [
+                    "Playground Pic",
+                    "PP",
+                    address,
+                    BigInt(1),
+                    300,
+                    address,
+                    [setupCalls], // Pass setupCalls  as a setup call
+                    '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892', // metadataRenderer
+                    metadataInitializer,
+                    "0x124F3eB5540BfF243c2B57504e0801E02696920E"
+                ]
+            });
+    
+            // Zora's multicall configuration
+            const multicallAddress = '0xcA11bde05977b3631167028862bE2a173976CA11'; // Verify this address
+            const multicallAbi = [
+                {
+                    "inputs": [
+                        {
+                            "components": [
+                                { "internalType": "address", "name": "target", "type": "address" },
+                                { "internalType": "bytes", "name": "callData", "type": "bytes" }
+                            ],
+                            "internalType": "struct Multicall3.Call[]",
+                            "name": "calls",
+                            "type": "tuple[]"
+                        }
+                    ],
+                    "name": "aggregate",
+                    "outputs": [
+                        { "internalType": "uint256", "name": "blockNumber", "type": "uint256" },
+                        { "internalType": "bytes[]", "name": "returnData", "type": "bytes[]" }
+                    ],
+                    "stateMutability": "payable",
+                    "type": "function"
+                }
+            ] as const;
+
+    
+            // Calculate total ETH required
+            const mintCost = parseEther("0.000777"); // Cost for minting
+            const createCost = parseEther("0.00003"); // Fixed cost for creating drop, update this value if it changes
+    
+            // Estimate gas
+            const estimatedGas = await publicClient.estimateGas({
+                account: address,
+                to: multicallAddress,
+                data: encodeFunctionData({
+                    abi: multicallAbi,
+                    functionName: 'aggregate',
+                    args: [[
+                        {
+                            target: zoraNftCreatorV1Config.address[base.id],
+                            callData: createDropData
+                        }
+                    ]]
+                }),
+                value: mintCost + createCost
+            });
+    
+            const gasPrice = await publicClient.getGasPrice();
+            const gasCost = estimatedGas * gasPrice;
+    
+            // Add a 10% buffer to the gas cost
+            const totalCost = mintCost + createCost + (gasCost * BigInt(110) / BigInt(100));
+    
+            // Multicall configuration
+            const multicallConfig = {
+                address: multicallAddress,
+                abi: multicallAbi,
+                functionName: 'aggregate',
+                args: [[
+                    {
+                        target: zoraNftCreatorV1Config.address[base.id],
+                        callData: createDropData
+                    }
+                ]],
+                value: totalCost,
+            } as const;
+
+
+    
+            // Initiating the multicall transaction
+            setMintingStep('Initiating transaction');
+            const hash = await writeContractAsync(multicallConfig);
+    
+            if (hash) {
+                console.log("Transaction initiated, hash:", hash);
+                setMintData(hash);
+                setMintingStep('Waiting for transaction confirmation');
+                const receipt = await waitForTransactionReceipt(publicClient, { hash });
+    
+                // Extract editionContractAddress from the CreatedDrop event
+                const createdDropEvent = receipt.logs.find(log =>
+                    log.topics[0] === '0x5754af5e5da2a42f78041e5277cfb80bd4c4cd124f9bc9e4ddd909c66bbfde39'
+                );
+    
+                if (createdDropEvent) {
+                    const editionContractAddress = createdDropEvent.address;
+                    console.log(`New drop created and NFT minted: ${editionContractAddress}`);
+                    setMintingSuccess(true);
+                    setMintingStep('Drop created and NFT minted successfully');
+                } else {
+                    throw new Error("CreatedDrop event not found in transaction receipt");
+                }
+            } else {
+                throw new Error("Failed to get transaction hash from contract deployment and minting");
+            }
+        } catch (error) {
+            console.error("Error while minting:", error);
+            setMintingError(error instanceof Error ? error.message : String(error));
+        } finally {
+            setIsMinting(false);
         }
-    }, [transactionSuccess]);
+    };
     
 
     
