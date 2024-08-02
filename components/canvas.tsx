@@ -14,7 +14,7 @@ import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
-import { ContractFunctionExecutionError, encodeAbiParameters, encodeFunctionData, parseEther } from 'viem';
+import { AbiFunctionNotFoundError, ContractFunctionExecutionError, encodeAbiParameters, encodeFunctionData, parseEther } from 'viem';
 import { erc721DropABI } from "@zoralabs/zora-721-contracts";
 import { zoraNftCreatorV1Config } from '@zoralabs/zora-721-contracts';
 import { base } from 'wagmi/chains';
@@ -249,39 +249,65 @@ const CanvasComponent = () => {
             const metadataURI = `ipfs://${imageHash}`;
             setMintingStep('Preparing transaction');
     
+            // Log the ABI
+            console.log("erc721DropABI:", JSON.stringify(erc721DropABI, null, 2));
+            console.log("zoraNftCreatorV1Config ABI:", JSON.stringify(zoraNftCreatorV1Config.abi, null, 2));
+
             // Encode the mintWithRewards function call
             console.log("Encoding mintWithRewards function call...");
-            const setupCalls = encodeFunctionData({
-                abi: erc721DropABI,
-                functionName: 'mintWithRewards',
-                args: [address, BigInt(1), "", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
-            });
+            let setupCalls;
+            try {
+                setupCalls = encodeFunctionData({
+                    abi: erc721DropABI,
+                    functionName: 'mintWithRewards',
+                    args: [address, BigInt(1), "", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
+                });
+                console.log("mintWithRewards encoded successfully");
+            } catch (error) {
+                console.error("Error encoding mintWithRewards:", error);
+                if (error instanceof AbiFunctionNotFoundError) {
+                    console.error("Function 'mintWithRewards' not found in ABI. Available functions:", 
+                        erc721DropABI.filter(item => item.type === 'function').map(item => item));
+                }
+                throw error;
+            }
 
-            
             console.log("Creating metadataInitializer...");
             const metadataInitializer = encodeAbiParameters(
                 [{ type: 'string' }, { type: 'string' }],
                 ["Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", metadataURI]
             );
-    
+
             // Encode the createAndConfigureDrop function call
             console.log("Preparing createAndConfigureDrop function call...");
-            const createDropData = encodeFunctionData({
-                abi: ZoraAbi,
-                functionName: 'createAndConfigureDrop',
-                args: [
-                    "Playground Pic",
-                    "PP",
-                    address,
-                    BigInt(1),
-                    300,
-                    address,
-                    [setupCalls], // Pass setupCalls  as a setup call
-                    '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892', // metadataRenderer
-                    metadataInitializer,
-                    "0x124F3eB5540BfF243c2B57504e0801E02696920E"
-                ]
-            });
+            let createDropData;
+            try {
+                createDropData = encodeFunctionData({
+                    abi: zoraNftCreatorV1Config.abi,
+                    functionName: 'createAndConfigureDrop',
+                    args: [
+                        "Playground Pic",
+                        "PP",
+                        address,
+                        BigInt(1),
+                        300,
+                        address,
+                        [setupCalls],
+                        '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892',
+                        metadataInitializer,
+                        "0x124F3eB5540BfF243c2B57504e0801E02696920E"
+                    ]
+                });
+                console.log("createAndConfigureDrop encoded successfully");
+            } catch (error) {
+                console.error("Error encoding createAndConfigureDrop:", error);
+                if (error instanceof AbiFunctionNotFoundError) {
+                    console.error("Function 'createAndConfigureDrop' not found in ABI. Available functions:", 
+                        zoraNftCreatorV1Config.abi.filter(item => item.type === 'function').map(item => item)); 
+                }
+                throw error;
+            }
+
     
             // Zora's multicall configuration
             const multicallAddress = '0xcA11bde05977b3631167028862bE2a173976CA11'; // Verify this address
