@@ -208,7 +208,7 @@ const CanvasComponent = () => {
 
       const [deployedContractAddress, setDeployedContractAddress] = useState<string | null>(null);
 
-      const { writeContractAsync } = useWriteContract();
+      const { writeContract } = useWriteContract();
       const { isLoading: isWaitingForTransaction, isSuccess: transactionSuccess } = useWaitForTransactionReceipt({
           hash: mintData ? (mintData as `0x${string}`) : undefined,
       });
@@ -261,79 +261,38 @@ const CanvasComponent = () => {
 
         // Prepare the createAndConfigureDrop function call
         console.log("Preparing createAndConfigureDrop function call...");
-        const createConfig = {
-            address: zoraNftCreatorV1Config.address[base.id] as `0x${string}`,
+        setMintingStep('Creating metadata...');
+      
+        // Create Drop contract
+        const args = [
+            "Playground Pic", // name
+            "PP", // symbol
+            address as `0x${string}`, // defaultAdmin
+            BigInt(1), // editionSize (1 for a single mint)
+            300, // royaltyBPS (3%)
+            address as `0x${string}`, // fundsRecipient
+            [], // setupCalls (empty for now)
+            '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
+            metadataInitializer, // metadataInitializer
+            "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
+        ] as const;
+
+        setMintingStep('Minting Smart Contract...');
+        await writeContract({
+            address: zoraNftCreatorV1Config.address[base.id], 
             abi: zoraNftCreatorV1Config.abi,
-            functionName: 'createAndConfigureDrop',
-            args: [
-                "Playground Pic", // name
-                "PP", // symbol
-                address, // defaultAdmin
-                BigInt(1), // editionSize
-                300, // royaltyBPS
-                address, // fundsRecipient
-                [], // setupCalls
-                '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
-                metadataInitializer, // metadataInitializer
-                "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
-            ],
-        } as const;
+            functionName: "createAndConfigureDrop",
+            args,
+        });
 
-        console.log("createConfig:", JSON.stringify(createConfig, (key, value) =>
-            typeof value === 'bigint' ? value.toString() : value
-        ));
-
-        setMintingStep('Initiating transaction');
-
-                // Simulate the transaction before sending
-                const { request } = await publicClient.simulateContract(createConfig);
-                console.log("Transaction simulation successful");
-               
-                const estimatedGas = await publicClient.estimateContractGas(createConfig);
-                console.log("Estimated gas:", estimatedGas);
-
-                console.log("createAndConfigureDrop encoded successfully");
-
-        // Send the transaction
-        const hash = await writeContractAsync(request);
-
-        if (hash) {
-            console.log("Transaction initiated, hash:", hash);
-            setMintData(hash);
-            setMintingStep('Waiting for transaction confirmation');
-
-            // Wait for the transaction to be mined
-            const receipt = await waitForTransactionReceipt(publicClient, { hash });
-
-            // Check for the CreatedDrop event in the transaction receipt
-            const createdDropEvent = receipt.logs.find(log => 
-                log.topics[0] === '0x5754af5e5da2a42f78041e5277cfb80bd4c4cd124f9bc9e4ddd909c66bbfde39' // keccak256("CreatedDrop(address,address,uint256)")
-            );
-
-            if (createdDropEvent) {
-                const [creator, editionContractAddress, editionSize] = createdDropEvent.topics.slice(1);
-                console.log(`New drop created: ${editionContractAddress}`);
-                setMintingSuccess(true);
-                setMintingStep('Drop created successfully');
-            } else {
-                throw new Error("CreatedDrop event not found in transaction receipt");
-            }
-        } else {
-            throw new Error("Failed to get transaction hash from contract deployment and minting");
-        }
+        setMintingSuccess(true);
     } catch (error) {
-        console.error("Error while minting:", error);
-        if (error instanceof ContractFunctionExecutionError) {
-            console.error("Contract error details:", error.cause);
-            setMintingError(`Contract error: ${error.cause?.message || error.message}`);
-        } else {
-            setMintingError(error instanceof Error ? error.message : String(error));
-        }
+        console.error('Error minting token:', error);
+        setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
     } finally {
         setIsMinting(false);
     }
 };
-
 
     useEffect(() => {
         const canvas = initializeFabric({ canvasRef, fabricRef });
