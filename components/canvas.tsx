@@ -214,7 +214,8 @@ const CanvasComponent = () => {
       const chainId = useChainId();
       const publicClient = usePublicClient()!;
       const { address } = useAccount();
-  
+      const { data: walletClient } = useWalletClient();
+
 
     const createMetadata = (imageHash: string) => ({
         name: "Playground Pic",
@@ -224,7 +225,6 @@ const CanvasComponent = () => {
 
 
     const handleMint = async () => {
-        const { data: walletClient } = useWalletClient();
       
         if (!address || !walletClient) {
           throw new Error("User address or wallet client is not available");
