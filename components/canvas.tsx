@@ -278,14 +278,24 @@ const CanvasComponent = () => {
                 "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
             ],
         } as const;
-        console.log("createAndConfigureDrop encoded successfully");
 
         console.log("createConfig:", JSON.stringify(createConfig, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
         ));
 
         setMintingStep('Initiating transaction');
-        const hash = await writeContractAsync(createConfig as any);
+
+                // Simulate the transaction before sending
+                const { request } = await publicClient.simulateContract(createConfig);
+                console.log("Transaction simulation successful");
+               
+                const estimatedGas = await publicClient.estimateContractGas(createConfig);
+                console.log("Estimated gas:", estimatedGas);
+
+                console.log("createAndConfigureDrop encoded successfully");
+
+        // Send the transaction
+        const hash = await writeContractAsync(request);
 
         if (hash) {
             console.log("Transaction initiated, hash:", hash);
