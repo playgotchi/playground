@@ -440,4 +440,4 @@ export const multicallAbi = [
       "type": "function"
     }
   ]
-]
+] as const;

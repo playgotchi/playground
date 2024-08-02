@@ -20,6 +20,7 @@ import { zoraNftCreatorV1Config } from '@zoralabs/zora-721-contracts';
 import { base } from 'wagmi/chains';
 import { waitForTransactionReceipt } from 'viem/actions';
 import { multicallAbi } from '@/lib/multicallABI';
+import { ZoraAbi } from '@/lib/zoraABI';
 
 
 
@@ -266,7 +267,7 @@ const CanvasComponent = () => {
             // Encode the createAndConfigureDrop function call
             console.log("Preparing createAndConfigureDrop function call...");
             const createDropData = encodeFunctionData({
-                abi: zoraNftCreatorV1Config.abi,
+                abi: ZoraAbi,
                 functionName: 'createAndConfigureDrop',
                 args: [
                     "Playground Pic",
@@ -310,7 +311,7 @@ const CanvasComponent = () => {
             const gasPrice = await publicClient.getGasPrice();
             const gasCost = estimatedGas * gasPrice;
     
-            // Add a 10% buffer to the gas cost
+            // Add a 20% buffer to the gas cost
             const totalCost = mintCost + createCost + (gasCost * BigInt(120) / BigInt(100));
     
             // Multicall configuration
