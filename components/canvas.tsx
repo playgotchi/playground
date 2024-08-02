@@ -8,7 +8,7 @@ import { handleDelete, handleKeyDown } from "@/lib/key-events";
 import { handleImageUpload } from "@/lib/shapes";
 import { defaultNavElement } from "@/constants";
 import { ActiveElement, Attributes } from "@/types/type";
-import { useAccount, useChainId, usePublicClient } from 'wagmi';
+import { useAccount, useChainId, usePublicClient, useSimulateContract } from 'wagmi';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 
 import Live from "@/components/Live";
@@ -19,6 +19,7 @@ import { erc721DropABI } from "@zoralabs/zora-721-contracts";
 import { zoraNftCreatorV1Config } from '@zoralabs/zora-721-contracts';
 import { base } from 'wagmi/chains';
 import { waitForTransactionReceipt } from 'viem/actions';
+import { multicallAbi } from '@/lib/multicallABI';
 
 
 
@@ -203,17 +204,17 @@ const CanvasComponent = () => {
         });
       };
 
-    const [deployedContractAddress, setDeployedContractAddress] = useState<string | null>(null);
+      const [deployedContractAddress, setDeployedContractAddress] = useState<string | null>(null);
 
-    const { writeContractAsync } = useWriteContract();
-    const { isLoading: isWaitingForTransaction, isSuccess: transactionSuccess } = useWaitForTransactionReceipt({
-        hash: mintData ? (mintData as `0x${string}`) : undefined,
+      const { writeContractAsync } = useWriteContract();
+      const { isLoading: isWaitingForTransaction, isSuccess: transactionSuccess } = useWaitForTransactionReceipt({
+          hash: mintData ? (mintData as `0x${string}`) : undefined,
       });
-
+  
       const chainId = useChainId();
       const publicClient = usePublicClient()!;
       const { address } = useAccount();
-
+  
 
     const createMetadata = (imageHash: string) => ({
         name: "Playground Pic",
@@ -283,28 +284,6 @@ const CanvasComponent = () => {
     
             // Zora's multicall configuration
             const multicallAddress = '0xcA11bde05977b3631167028862bE2a173976CA11'; // Verify this address
-            const multicallAbi = [
-                {
-                    "inputs": [
-                        {
-                            "components": [
-                                { "internalType": "address", "name": "target", "type": "address" },
-                                { "internalType": "bytes", "name": "callData", "type": "bytes" }
-                            ],
-                            "internalType": "struct Multicall3.Call[]",
-                            "name": "calls",
-                            "type": "tuple[]"
-                        }
-                    ],
-                    "name": "aggregate",
-                    "outputs": [
-                        { "internalType": "uint256", "name": "blockNumber", "type": "uint256" },
-                        { "internalType": "bytes[]", "name": "returnData", "type": "bytes[]" }
-                    ],
-                    "stateMutability": "payable",
-                    "type": "function"
-                }
-            ] as const;
 
     
             // Calculate total ETH required
@@ -332,7 +311,7 @@ const CanvasComponent = () => {
             const gasCost = estimatedGas * gasPrice;
     
             // Add a 10% buffer to the gas cost
-            const totalCost = mintCost + createCost + (gasCost * BigInt(110) / BigInt(100));
+            const totalCost = mintCost + createCost + (gasCost * BigInt(120) / BigInt(100));
     
             // Multicall configuration
             const multicallConfig = {
@@ -350,31 +329,48 @@ const CanvasComponent = () => {
 
 
     
-            // Initiating the multicall transaction
-            setMintingStep('Initiating transaction');
-            const hash = await writeContractAsync(multicallConfig);
-    
-            if (hash) {
-                console.log("Transaction initiated, hash:", hash);
-                setMintData(hash);
-                setMintingStep('Waiting for transaction confirmation');
-                const receipt = await waitForTransactionReceipt(publicClient, { hash });
-    
-                // Extract editionContractAddress from the CreatedDrop event
-                const createdDropEvent = receipt.logs.find(log =>
-                    log.topics[0] === '0x5754af5e5da2a42f78041e5277cfb80bd4c4cd124f9bc9e4ddd909c66bbfde39'
-                );
-    
-                if (createdDropEvent) {
-                    const editionContractAddress = createdDropEvent.address;
-                    console.log(`New drop created and NFT minted: ${editionContractAddress}`);
-                    setMintingSuccess(true);
-                    setMintingStep('Drop created and NFT minted successfully');
+            setMintingStep('Simulating transaction');
+            
+            // Use useSimulateContract hook
+            const { data: simulationResult, error: simulationError } = useSimulateContract({
+                ...multicallConfig,
+                chainId,
+            });
+
+            if (simulationError) {
+                throw new Error(`Simulation failed: ${simulationError.message}`);
+            }
+
+            if (simulationResult) {
+                console.log("Simulation successful:", simulationResult);
+                
+                // Proceed with the actual transaction
+                setMintingStep('Initiating transaction');
+                const hash = await writeContractAsync(multicallConfig);
+
+                if (hash) {
+                    console.log("Transaction initiated, hash:", hash);
+                    setMintData(hash);
+                    setMintingStep('Waiting for transaction confirmation');
+                    const receipt = await waitForTransactionReceipt(publicClient, { hash });
+
+                    const createdDropEvent = receipt.logs.find(log =>
+                        log.topics[0] === '0x5754af5e5da2a42f78041e5277cfb80bd4c4cd124f9bc9e4ddd909c66bbfde39'
+                    );
+
+                    if (createdDropEvent) {
+                        const editionContractAddress = createdDropEvent.address;
+                        console.log(`New drop created and NFT minted: ${editionContractAddress}`);
+                        setMintingSuccess(true);
+                        setMintingStep('Drop created and NFT minted successfully');
+                    } else {
+                        throw new Error("CreatedDrop event not found in transaction receipt");
+                    }
                 } else {
-                    throw new Error("CreatedDrop event not found in transaction receipt");
+                    throw new Error("Failed to get transaction hash from contract deployment and minting");
                 }
             } else {
-                throw new Error("Failed to get transaction hash from contract deployment and minting");
+                throw new Error("Transaction simulation failed");
             }
         } catch (error) {
             console.error("Error while minting:", error);
@@ -383,9 +379,6 @@ const CanvasComponent = () => {
             setIsMinting(false);
         }
     };
-    
-
-    
 
     useEffect(() => {
         const canvas = initializeFabric({ canvasRef, fabricRef });
