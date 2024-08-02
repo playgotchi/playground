@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { fabric } from "fabric";
 import { useMutation, useRedo, useStorage, useUndo } from "@liveblocks/react/suspense";
 import { handleCanvaseMouseMove, handleCanvasMouseDown, handleCanvasMouseUp, handleCanvasObjectModified, handleCanvasObjectMoving, handleCanvasObjectScaling, handleCanvasSelectionCreated, handleCanvasZoom, handlePathCreated, handleResize, initializeFabric, renderCanvas } from "@/lib/canvas";
@@ -8,7 +8,7 @@ import { handleDelete, handleKeyDown } from "@/lib/key-events";
 import { handleImageUpload } from "@/lib/shapes";
 import { defaultNavElement } from "@/constants";
 import { ActiveElement, Attributes } from "@/types/type";
-import { useAccount, useChainId, usePublicClient, useSimulateContract, useWalletClient } from 'wagmi';
+import { useAccount, useChainId, useConnect, usePublicClient, useSimulateContract, useWalletClient } from 'wagmi';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 
 import Live from "@/components/Live";
@@ -20,6 +20,8 @@ import { zoraNftCreatorV1Config } from '@zoralabs/zora-721-contracts';
 import { base } from 'wagmi/chains';
 import { waitForTransactionReceipt } from 'viem/actions';
 import { multicallAbi } from '@/lib/multicallABI';
+import { InjectedConnector } from 'wagmi/connectors/injected';
+
 
 
 
@@ -213,8 +215,10 @@ const CanvasComponent = () => {
   
       const chainId = useChainId();
       const publicClient = usePublicClient()!;
-      const { address } = useAccount();
-      const { data: walletClient } = useWalletClient();
+      const { address, isConnected } = useAccount();
+      const { connect } = useConnect();
+
+    const { data: walletClient } = useWalletClient();
 
 
     const createMetadata = (imageHash: string) => ({
@@ -224,17 +228,17 @@ const CanvasComponent = () => {
     });
 
 
+    
     const handleMint = async () => {
-      
-        if (!address || !walletClient) {
-          throw new Error("User address or wallet client is not available");
+        if (!address) {
+            throw new Error("User address is not available");
         }
-      
+        
         setIsMinting(true);
         setMintingError(null);
         setMintingSuccess(false);
         setMintingStep('Capturing image');
-      
+    
         try {
           console.log("Capturing image from whiteboard...");
           const imageDataUrl = await captureWhiteboard();
@@ -246,58 +250,79 @@ const CanvasComponent = () => {
           console.log("Image uploaded to IPFS, hash:", imageHash);
           const metadataURI = `ipfs://${imageHash}`;
           setMintingStep('Preparing transaction');
-      
-          console.log("Encoding mintWithRewards function call...");
-          const setupCalls = encodeFunctionData({
-            abi: erc721DropABI,
-            functionName: 'mintWithRewards',
-            args: [address, BigInt(1), "", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
-          });
-      
-          console.log("Creating metadataInitializer...");
-          const metadataInitializer = encodeAbiParameters(
+    
+
+        // Prepare metadata initialization
+        console.log("Creating metadataInitializer...");
+        const metadataInitializer = encodeAbiParameters(
             [{ type: 'string' }, { type: 'string' }],
             ["Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", metadataURI]
-          );
-      
-          console.log("Preparing createAndConfigureDrop function call...");
-          const createDropArgs = [
-            "Playground Pic",
-            "PP",
-            address,
-            BigInt(1),
-            300,
-            address,
-            [setupCalls],
-            '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892',
-            metadataInitializer,
-            "0x124F3eB5540BfF243c2B57504e0801E02696920E"
-          ] as const;
-      
-          console.log("Sending transaction...");
-          const { request } = await publicClient.simulateContract({
-            account: address,
-            address: zoraNftCreatorV1Config.address as unknown as `0x${string}`,
+        );
+
+        // Prepare the createAndConfigureDrop function call
+        console.log("Preparing createAndConfigureDrop function call...");
+        const createConfig = {
+            address: zoraNftCreatorV1Config.address[base.id] as `0x${string}`,
             abi: zoraNftCreatorV1Config.abi,
             functionName: 'createAndConfigureDrop',
-            args: createDropArgs,
-          });
-      
-          const hash = await walletClient.writeContract(request);
-          console.log("Transaction sent!", hash);
-      
-          const receipt = await publicClient.waitForTransactionReceipt({ hash });
-          console.log("Transaction confirmed:", receipt);
-      
-          setMintingSuccess(true);
-          setMintingStep('Minting completed');
-        } catch (error) {
-          console.error("Minting failed:", error);
-          setMintingError(error instanceof Error ? error.message : String(error));
-        } finally {
-          setIsMinting(false);
+            args: [
+                "Playground Pic", // name
+                "PP", // symbol
+                address, // defaultAdmin
+                BigInt(1), // editionSize
+                300, // royaltyBPS
+                address, // fundsRecipient
+                [], // setupCalls
+                '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
+                metadataInitializer, // metadataInitializer
+                "0x124F3eB5540BfF243c2B57504e0801E02696920E", // createReferral
+            ],
+        } as const;
+        console.log("createAndConfigureDrop encoded successfully");
+
+        console.log("createConfig:", JSON.stringify(createConfig, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+        ));
+
+        setMintingStep('Initiating transaction');
+        const hash = await writeContractAsync(createConfig as any);
+
+        if (hash) {
+            console.log("Transaction initiated, hash:", hash);
+            setMintData(hash);
+            setMintingStep('Waiting for transaction confirmation');
+
+            // Wait for the transaction to be mined
+            const receipt = await waitForTransactionReceipt(publicClient, { hash });
+
+            // Check for the CreatedDrop event in the transaction receipt
+            const createdDropEvent = receipt.logs.find(log => 
+                log.topics[0] === '0x5754af5e5da2a42f78041e5277cfb80bd4c4cd124f9bc9e4ddd909c66bbfde39' // keccak256("CreatedDrop(address,address,uint256)")
+            );
+
+            if (createdDropEvent) {
+                const [creator, editionContractAddress, editionSize] = createdDropEvent.topics.slice(1);
+                console.log(`New drop created: ${editionContractAddress}`);
+                setMintingSuccess(true);
+                setMintingStep('Drop created successfully');
+            } else {
+                throw new Error("CreatedDrop event not found in transaction receipt");
+            }
+        } else {
+            throw new Error("Failed to get transaction hash from contract deployment and minting");
         }
-      };
+    } catch (error) {
+        console.error("Error while minting:", error);
+        if (error instanceof ContractFunctionExecutionError) {
+            console.error("Contract error details:", error.cause);
+            setMintingError(`Contract error: ${error.cause?.message || error.message}`);
+        } else {
+            setMintingError(error instanceof Error ? error.message : String(error));
+        }
+    } finally {
+        setIsMinting(false);
+    }
+};
 
 
     useEffect(() => {
