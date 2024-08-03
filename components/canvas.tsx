@@ -255,12 +255,21 @@ const CanvasComponent = () => {
             // Prepare metadata initialization
             console.log("Creating metadataInitializer...");
             const abiCoder = new ethers.AbiCoder();
+
             const metadataInitializer = abiCoder.encode(
                 ['string', 'string', 'string'],
                 [baseURI, contractURI, "0x"] 
             );
-    
-            setMintingStep('Creating metadata...');
+            
+        // Prepare the mintWithRewards call data
+        console.log("Encoding mintWithRewards function call...");
+        const setupCalls = encodeFunctionData({
+            abi: erc721DropABI,
+            functionName: 'mintWithRewards',
+            args: [address, BigInt(1), "", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
+        });
+        console.log("mintWithRewards encoded successfully");
+
             // Prepare the createAndConfigureDrop function call
             console.log("Preparing createAndConfigureDrop function call...");
             setMintingStep('Creating metadata...');
@@ -273,7 +282,7 @@ const CanvasComponent = () => {
                 BigInt(1), // editionSize (1 for a single mint)
                 300, // royaltyBPS (3%)
                 address as `0x${string}`, // fundsRecipient
-                [], // setupCalls (empty for now)
+                [setupCalls], // setupCalls with mintWithRewards
                 '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
                 metadataInitializer as `0x${string}`,
                 "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
@@ -319,20 +328,31 @@ const CanvasComponent = () => {
     
             console.log("Transaction receipt:", receipt);
     
+                  // Extract editionContractAddress from the CreatedDrop event
+        const createdDropEvent = receipt.logs.find(log =>
+            log.topics[0] === '0x5754af5e5da2a42f78041e5277cfb80bd4c4cd124f9bc9e4ddd909c66bbfde39'
+        );
+
+        if (createdDropEvent) {
+            const editionContractAddress = createdDropEvent.address;
+            console.log(`New drop created: ${editionContractAddress}`);
             setMintingSuccess(true);
             setMintingStep('Drop created successfully');
-        } catch (error) {
-            console.error('Error minting token:', error);
-            if (error instanceof ContractFunctionExecutionError) {
-                console.error("Contract error details:", error.cause);
-                setMintingError(`Contract error: ${error.cause?.message || error.message}`);
-            } else {
-                setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
-            }
-        } finally {
-            setIsMinting(false);
+        } else {
+            throw new Error("CreatedDrop event not found in transaction receipt");
         }
-    };
+    } catch (error) {
+        console.error('Error minting token:', error);
+        if (error instanceof ContractFunctionExecutionError) {
+            console.error("Contract error details:", error.cause);
+            setMintingError(`Contract error: ${error.cause?.message || error.message}`);
+        } else {
+            setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
+        }
+    } finally {
+        setIsMinting(false);
+    }
+};
 
     useEffect(() => {
         const canvas = initializeFabric({ canvasRef, fabricRef });
