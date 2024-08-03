@@ -14,13 +14,11 @@ import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import Live from "@/components/Live";
 import Navbar from "@/components/Navbar";
 import RightSidebar from "@/components/RightSidebar";
-import { ContractFunctionExecutionError, encodeAbiParameters, encodeFunctionData, parseEther } from 'viem';
+import { ContractFunctionExecutionError, encodeAbiParameters, parseAbiParameters, stringToHex, encodeFunctionData, parseEther } from 'viem';
 import { erc721DropABI } from "@zoralabs/zora-721-contracts";
 import { zoraNftCreatorV1Config } from '@zoralabs/zora-721-contracts';
 import { base } from 'wagmi/chains';
 import { waitForTransactionReceipt } from 'viem/actions';
-import { multicallAbi } from '@/lib/multicallABI';
-import { InjectedConnector } from 'wagmi/connectors/injected';
 
 
 interface TransactionResponse {
@@ -256,10 +254,9 @@ const CanvasComponent = () => {
             // Prepare metadata initialization
             console.log("Creating metadataInitializer...");
             const metadataInitializer = encodeAbiParameters(
-                [{ type: 'string' }],
+                parseAbiParameters('string'),
                 [baseURI]
-            );
-            console.log("Metadata initializer created:", metadataInitializer);
+            )
     
             // Prepare the createAndConfigureDrop function call
             console.log("Preparing createAndConfigureDrop function call...");
@@ -275,7 +272,7 @@ const CanvasComponent = () => {
                 address as `0x${string}`, // fundsRecipient
                 [], // setupCalls (empty for now)
                 '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
-                metadataInitializer, // metadataInitializer
+                metadataInitializer,
                 "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
             ] as const;
     
