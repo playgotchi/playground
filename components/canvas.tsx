@@ -19,11 +19,7 @@ import { erc721DropABI } from "@zoralabs/zora-721-contracts";
 import { zoraNftCreatorV1Config } from '@zoralabs/zora-721-contracts';
 import { base } from 'wagmi/chains';
 import { waitForTransactionReceipt } from 'viem/actions';
-
-
-interface TransactionResponse {
-    hash: string;
-  }
+import { ethers } from 'ethers';
 
 const CanvasComponent = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -253,10 +249,11 @@ const CanvasComponent = () => {
     
             // Prepare metadata initialization
             console.log("Creating metadataInitializer...");
-            const metadataInitializer = encodeAbiParameters(
-                parseAbiParameters('string'),
+            const abiCoder = new ethers.AbiCoder();
+            const metadataInitializer = abiCoder.encode(
+                ['string'],
                 [baseURI]
-            )
+            );
     
             // Prepare the createAndConfigureDrop function call
             console.log("Preparing createAndConfigureDrop function call...");
@@ -272,7 +269,7 @@ const CanvasComponent = () => {
                 address as `0x${string}`, // fundsRecipient
                 [], // setupCalls (empty for now)
                 '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
-                metadataInitializer,
+                metadataInitializer as `0x${string}`,
                 "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
             ] as const;
     
