@@ -235,7 +235,7 @@ const CanvasComponent = () => {
         if (!address) {
             throw new Error("User address is not available");
         }
-    
+        
         setIsMinting(true);
         setMintingError(null);
         setMintingSuccess(false);
@@ -259,20 +259,21 @@ const CanvasComponent = () => {
                 [{ type: 'string' }, { type: 'string' }],
                 ["Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", metadataURI]
             );
-    
             console.log("Metadata initializer created:", metadataInitializer);
     
+            // Prepare the createAndConfigureDrop function call
+            console.log("Preparing createAndConfigureDrop function call...");
             setMintingStep('Creating metadata...');
-    
+          
             // Create Drop contract
             const args = [
                 "Playground Pic", // name
                 "PP", // symbol
                 address as `0x${string}`, // defaultAdmin
-                BigInt(1), // editionSize
-                300, // royaltyBPS
+                BigInt(1), // editionSize (1 for a single mint)
+                300, // royaltyBPS (3%)
                 address as `0x${string}`, // fundsRecipient
-                [], // setupCalls
+                [], // setupCalls (empty for now)
                 '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
                 metadataInitializer, // metadataInitializer
                 "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
@@ -280,27 +281,54 @@ const CanvasComponent = () => {
     
             console.log("Args for createAndConfigureDrop:", args);
     
-            setMintingStep('Minting Smart Contract...');
-            console.log("Deploying smart contract...");
-        const hash = await writeContractAsync({
-            address: zoraNftCreatorV1Config.address[base.id], 
-            abi: zoraNftCreatorV1Config.abi,
-            functionName: "createAndConfigureDrop",
-            args,
-        });
+            // Simulate the transaction
+            setMintingStep('Simulating transaction...');
+            console.log("Simulating Transaction");
 
-        console.log("Transaction hash:", hash);
-        setMintingStep('Waiting for transaction confirmation...');
-
-        // Wait for transaction confirmation
-        const receipt = await waitForTransactionReceipt(publicClient, { hash });
-
-        console.log("Transaction receipt:", receipt);
+            try {
+                const { request } = await publicClient.simulateContract({
+                    account: address,
+                    address: zoraNftCreatorV1Config.address[base.id],
+                    abi: zoraNftCreatorV1Config.abi,
+                    functionName: "createAndConfigureDrop",
+                    args,
+                });
+                console.log("Transaction simulation successful", request);
+            } catch (error) {
+                console.error("Transaction simulation failed:", error);
+                if (error instanceof Error) {
+                    throw new Error(`Transaction simulation failed: ${error.message}`);
+                } else {
+                    throw new Error('Transaction simulation failed with an unknown error');
+                }
+            }
+    
+            setMintingStep('Deploying smart contract...');
+            const hash = await writeContractAsync({
+                address: zoraNftCreatorV1Config.address[base.id], 
+                abi: zoraNftCreatorV1Config.abi,
+                functionName: "createAndConfigureDrop",
+                args,
+            });
+    
+            console.log("Transaction hash:", hash);
+            setMintingStep('Waiting for transaction confirmation...');
+    
+            // Wait for transaction confirmation
+            const receipt = await waitForTransactionReceipt(publicClient, { hash });
+    
+            console.log("Transaction receipt:", receipt);
     
             setMintingSuccess(true);
+            setMintingStep('Drop created successfully');
         } catch (error) {
             console.error('Error minting token:', error);
-            setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
+            if (error instanceof ContractFunctionExecutionError) {
+                console.error("Contract error details:", error.cause);
+                setMintingError(`Contract error: ${error.cause?.message || error.message}`);
+            } else {
+                setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
+            }
         } finally {
             setIsMinting(false);
         }
