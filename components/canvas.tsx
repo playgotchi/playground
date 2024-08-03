@@ -23,7 +23,9 @@ import { multicallAbi } from '@/lib/multicallABI';
 import { InjectedConnector } from 'wagmi/connectors/injected';
 
 
-
+interface TransactionResponse {
+    hash: string;
+  }
 
 const CanvasComponent = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -208,7 +210,7 @@ const CanvasComponent = () => {
 
       const [deployedContractAddress, setDeployedContractAddress] = useState<string | null>(null);
 
-      const { writeContract } = useWriteContract();
+      const { writeContractAsync } = useWriteContract();
       const { isLoading: isWaitingForTransaction, isSuccess: transactionSuccess } = useWaitForTransactionReceipt({
           hash: mintData ? (mintData as `0x${string}`) : undefined,
       });
@@ -233,66 +235,76 @@ const CanvasComponent = () => {
         if (!address) {
             throw new Error("User address is not available");
         }
-        
+    
         setIsMinting(true);
         setMintingError(null);
         setMintingSuccess(false);
         setMintingStep('Capturing image');
     
         try {
-          console.log("Capturing image from whiteboard...");
-          const imageDataUrl = await captureWhiteboard();
-          setMintingStep('Uploading to IPFS');
-          console.log("Image captured, fetching blob...");
-          const blob = await (await fetch(imageDataUrl)).blob();
-          console.log("Blob fetched, uploading to IPFS...");
-          const imageHash = await uploadToIPFS(blob);
-          console.log("Image uploaded to IPFS, hash:", imageHash);
-          const metadataURI = `ipfs://${imageHash}`;
-          setMintingStep('Preparing transaction');
+            console.log("Capturing image from whiteboard...");
+            const imageDataUrl = await captureWhiteboard();
+            setMintingStep('Uploading to IPFS');
+            console.log("Image captured, fetching blob...");
+            const blob = await (await fetch(imageDataUrl)).blob();
+            console.log("Blob fetched, uploading to IPFS...");
+            const imageHash = await uploadToIPFS(blob);
+            console.log("Image uploaded to IPFS, hash:", imageHash);
+            const metadataURI = `ipfs://${imageHash}`;
+            setMintingStep('Preparing transaction');
     
-
-        // Prepare metadata initialization
-        console.log("Creating metadataInitializer...");
-        const metadataInitializer = encodeAbiParameters(
-            [{ type: 'string' }, { type: 'string' }],
-            ["Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", metadataURI]
-        );
-
-        // Prepare the createAndConfigureDrop function call
-        console.log("Preparing createAndConfigureDrop function call...");
-        setMintingStep('Creating metadata...');
-      
-        // Create Drop contract
-        const args = [
-            "Playground Pic", // name
-            "PP", // symbol
-            address as `0x${string}`, // defaultAdmin
-            BigInt(1), // editionSize (1 for a single mint)
-            300, // royaltyBPS (3%)
-            address as `0x${string}`, // fundsRecipient
-            [], // setupCalls (empty for now)
-            '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
-            metadataInitializer, // metadataInitializer
-            "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
-        ] as const;
-
-        setMintingStep('Minting Smart Contract...');
-        await writeContract({
+            // Prepare metadata initialization
+            console.log("Creating metadataInitializer...");
+            const metadataInitializer = encodeAbiParameters(
+                [{ type: 'string' }, { type: 'string' }],
+                ["Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", metadataURI]
+            );
+    
+            console.log("Metadata initializer created:", metadataInitializer);
+    
+            setMintingStep('Creating metadata...');
+    
+            // Create Drop contract
+            const args = [
+                "Playground Pic", // name
+                "PP", // symbol
+                address as `0x${string}`, // defaultAdmin
+                BigInt(1), // editionSize
+                300, // royaltyBPS
+                address as `0x${string}`, // fundsRecipient
+                [], // setupCalls
+                '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
+                metadataInitializer, // metadataInitializer
+                "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
+            ] as const;
+    
+            console.log("Args for createAndConfigureDrop:", args);
+    
+            setMintingStep('Minting Smart Contract...');
+            console.log("Deploying smart contract...");
+        const hash = await writeContractAsync({
             address: zoraNftCreatorV1Config.address[base.id], 
             abi: zoraNftCreatorV1Config.abi,
             functionName: "createAndConfigureDrop",
             args,
         });
 
-        setMintingSuccess(true);
-    } catch (error) {
-        console.error('Error minting token:', error);
-        setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
-    } finally {
-        setIsMinting(false);
-    }
-};
+        console.log("Transaction hash:", hash);
+        setMintingStep('Waiting for transaction confirmation...');
+
+        // Wait for transaction confirmation
+        const receipt = await waitForTransactionReceipt(publicClient, { hash });
+
+        console.log("Transaction receipt:", receipt);
+    
+            setMintingSuccess(true);
+        } catch (error) {
+            console.error('Error minting token:', error);
+            setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
+        } finally {
+            setIsMinting(false);
+        }
+    };
 
     useEffect(() => {
         const canvas = initializeFabric({ canvasRef, fabricRef });
