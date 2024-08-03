@@ -250,14 +250,14 @@ const CanvasComponent = () => {
             console.log("Blob fetched, uploading to IPFS...");
             const imageHash = await uploadToIPFS(blob);
             console.log("Image uploaded to IPFS, hash:", imageHash);
-            const metadataURI = `ipfs://${imageHash}`;
+            const baseURI = `ipfs://${imageHash}/`;
             setMintingStep('Preparing transaction');
     
             // Prepare metadata initialization
             console.log("Creating metadataInitializer...");
             const metadataInitializer = encodeAbiParameters(
-                [{ type: 'string' }, { type: 'string' }],
-                ["Made with Playground by Playgotchi. (https://playground.playgotchi.com/)", metadataURI]
+                [{ type: 'string' }],
+                [baseURI]
             );
             console.log("Metadata initializer created:", metadataInitializer);
     
@@ -284,7 +284,7 @@ const CanvasComponent = () => {
             // Simulate the transaction
             setMintingStep('Simulating transaction...');
             console.log("Simulating Transaction");
-
+    
             try {
                 const { request } = await publicClient.simulateContract({
                     account: address,
