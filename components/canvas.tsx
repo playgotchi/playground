@@ -261,15 +261,22 @@ const CanvasComponent = () => {
                 [baseURI, contractURI, "0x"] 
             );
             
-        // Prepare the mintWithRewards call data
-        console.log("Encoding mintWithRewards function call...");
-        const setupCalls = encodeFunctionData({
-            abi: erc721DropABI,
-            functionName: 'mintWithRewards',
-            args: [address, BigInt(1), "", "0x124F3eB5540BfF243c2B57504e0801E02696920E"]
-        });
-        console.log("mintWithRewards encoded successfully");
+       // Prepare the mintWithRewards call data
+       console.log("Encoding mintWithRewards function call...");
+       const erc721DropInterface = new ethers.Interface(erc721DropABI);
+       const mintWithRewardsData = erc721DropInterface.encodeFunctionData('mintWithRewards', [
+           address,
+           BigInt(1),
+           "",
+           "0x124F3eB5540BfF243c2B57504e0801E02696920E"
+       ]);
 
+       const setupCalls = [mintWithRewardsData];
+
+       console.log("mintWithRewards encoded successfully");
+
+    
+            setMintingStep('Creating metadata...');
             // Prepare the createAndConfigureDrop function call
             console.log("Preparing createAndConfigureDrop function call...");
             setMintingStep('Creating metadata...');
@@ -282,7 +289,7 @@ const CanvasComponent = () => {
                 BigInt(1), // editionSize (1 for a single mint)
                 300, // royaltyBPS (3%)
                 address as `0x${string}`, // fundsRecipient
-                [setupCalls], // setupCalls with mintWithRewards
+                setupCalls as readonly `0x${string}`[], // setupCalls with mintWithRewards
                 '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
                 metadataInitializer as `0x${string}`,
                 "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
