@@ -211,10 +211,7 @@ const CanvasComponent = () => {
   
       const chainId = useChainId();
       const publicClient = usePublicClient()!;
-      const { address, isConnected } = useAccount();
-      const { connect } = useConnect();
-
-    const { data: walletClient } = useWalletClient();
+      const { address } = useAccount();
 
 
     const createMetadata = (imageHash: string) => ({
@@ -244,6 +241,14 @@ const CanvasComponent = () => {
             console.log("Blob fetched, uploading to IPFS...");
             const imageHash = await uploadToIPFS(blob);
             console.log("Image uploaded to IPFS, hash:", imageHash);
+            
+            // Create and upload contract metadata
+            console.log("Creating and uploading contract metadata...");
+            const contractMetadata = createMetadata(imageHash);
+            const contractMetadataHash = await uploadToIPFS(new Blob([JSON.stringify(contractMetadata)], { type: 'application/json' }));
+            const contractURI = `ipfs://${contractMetadataHash}`;
+            console.log("Contract metadata uploaded to IPFS, hash:", contractMetadataHash);
+    
             const baseURI = `ipfs://${imageHash}/`;
             setMintingStep('Preparing transaction');
     
@@ -251,10 +256,11 @@ const CanvasComponent = () => {
             console.log("Creating metadataInitializer...");
             const abiCoder = new ethers.AbiCoder();
             const metadataInitializer = abiCoder.encode(
-                ['string'],
-                [baseURI]
+                ['string', 'string', 'string'],
+                [baseURI, contractURI, "0x"] 
             );
     
+            setMintingStep('Creating metadata...');
             // Prepare the createAndConfigureDrop function call
             console.log("Preparing createAndConfigureDrop function call...");
             setMintingStep('Creating metadata...');
