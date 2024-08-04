@@ -261,19 +261,32 @@ const CanvasComponent = () => {
                 [baseURI, contractURI, "0x"] 
             );
             
-       // Prepare the mintWithRewards call data
-       console.log("Encoding mintWithRewards function call...");
-       const erc721DropInterface = new ethers.Interface(erc721DropABI);
-       const mintWithRewardsData = erc721DropInterface.encodeFunctionData('mintWithRewards', [
-           address,
-           BigInt(1),
-           "",
-           "0x124F3eB5540BfF243c2B57504e0801E02696920E"
-       ]);
-
-       const setupCalls = [mintWithRewardsData];
-
-       console.log("mintWithRewards encoded successfully");
+            console.log("Preparing setupCalls...");
+            const erc721DropInterface = new ethers.Interface(erc721DropABI);
+            
+            // 1. Activate the sale
+            const activateSaleData = erc721DropInterface.encodeFunctionData('setSaleConfiguration', [
+                0, // publicSalePrice (0 for free mint)
+                BigInt(1), // maxSalePurchasePerAddress
+                BigInt(Math.floor(Date.now() / 1000)), // publicSaleStart (current timestamp)
+                BigInt(Math.floor(Date.now() / 1000) + 31536000), // publicSaleEnd (1 year from now)
+                0, // presaleStart
+                0, // presaleEnd
+                ethers.ZeroHash // presaleMerkleRoot
+            ]);
+    
+            // 2. Prepare mintWithRewards call
+            const mintWithRewardsData = erc721DropInterface.encodeFunctionData('mintWithRewards', [
+                address, // recipient
+                BigInt(1), // quantity
+                "", // comment (empty string)
+                "0x124F3eB5540BfF243c2B57504e0801E02696920E" // mintReferral
+            ]);
+    
+            // Combine setupCalls
+            const setupCalls = [activateSaleData, mintWithRewardsData];
+    
+            console.log("setupCalls prepared successfully");
 
     
             setMintingStep('Creating metadata...');
