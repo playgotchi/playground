@@ -284,8 +284,10 @@ const CanvasComponent = () => {
             ]);
     
             // Combine setupCalls
-            const setupCalls = [activateSaleData, mintWithRewardsData];
-    
+            const setupCalls: readonly `0x${string}`[] = [
+                activateSaleData as `0x${string}`,
+                mintWithRewardsData as `0x${string}`
+            ];    
             console.log("setupCalls prepared successfully");
 
     
@@ -299,10 +301,10 @@ const CanvasComponent = () => {
                 "Playground Pic", // name
                 "PP", // symbol
                 address as `0x${string}`, // defaultAdmin
-                BigInt(1), // editionSize (1 for a single mint)
+                BigInt(2), // editionSize (1 for a single mint)
                 300, // royaltyBPS (3%)
                 address as `0x${string}`, // fundsRecipient
-                setupCalls as readonly `0x${string}`[], // setupCalls with mintWithRewards
+                setupCalls, // setupCalls with mintWithRewards
                 '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
                 metadataInitializer as `0x${string}`,
                 "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
