@@ -261,18 +261,29 @@ const CanvasComponent = () => {
                 [baseURI, contractURI, "0x"] 
             );
             
+            
             console.log("Preparing setupCalls...");
             const erc721DropInterface = new ethers.Interface(erc721DropABI);
+           
+            const salesConfiguration = {
+                publicSalePrice: BigInt(0),
+                maxSalePurchasePerAddress: 1,
+                publicSaleStart: BigInt(Math.floor(Date.now() / 1000) - 60), // 1 minute ago to ensure it's active
+                publicSaleEnd: BigInt("0xFFFFFFFFFFFFFFFF"), // Far future
+                presaleStart: BigInt(0),
+                presaleEnd: BigInt(0),
+                presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
+            };
 
-            // 1. Activate the sale
+             // 1. Activate the sale
             const activateSaleData = erc721DropInterface.encodeFunctionData('setSaleConfiguration', [
-                0, // publicSalePrice (0 for free mint)
-                BigInt(1), // maxSalePurchasePerAddress
-                BigInt(Math.floor(Date.now() / 1000)), // publicSaleStart (current timestamp)
-                BigInt(Math.floor(Date.now() / 1000) + 31536000), // publicSaleEnd (1 year from now)
-                0, // presaleStart
-                0, // presaleEnd
-                ethers.ZeroHash // presaleMerkleRoot
+                salesConfiguration.publicSalePrice,
+                salesConfiguration.maxSalePurchasePerAddress,
+                salesConfiguration.publicSaleStart,
+                salesConfiguration.publicSaleEnd,
+                salesConfiguration.presaleStart,
+                salesConfiguration.presaleEnd,
+                salesConfiguration.presaleMerkleRoot
             ]);
             console.log("Sales data encoded");
 
@@ -292,7 +303,6 @@ const CanvasComponent = () => {
             console.log("setupCalls prepared successfully");
 
     
-            setMintingStep('Creating metadata...');
             // Prepare the createAndConfigureDrop function call
             console.log("Preparing createAndConfigureDrop function call...");
             setMintingStep('Creating metadata...');
@@ -302,7 +312,7 @@ const CanvasComponent = () => {
                 "Playground Pic", // name
                 "PP", // symbol
                 address as `0x${string}`, // defaultAdmin
-                BigInt(1), // editionSize (1 for a single mint)
+                BigInt(2), // editionSize (1 for a single mint)
                 300, // royaltyBPS (3%)
                 address as `0x${string}`, // fundsRecipient
                 setupCalls, // setupCalls
@@ -318,6 +328,10 @@ const CanvasComponent = () => {
             console.log("Simulating Transaction");
     
             try {
+                // Simulate the transaction
+                setMintingStep('Simulating transaction...');
+                console.log("Simulating Transaction");
+            
                 const { request } = await publicClient.simulateContract({
                     account: address,
                     address: zoraNftCreatorV1Config.address[base.id],
@@ -327,7 +341,15 @@ const CanvasComponent = () => {
                 });
                 console.log("Transaction simulation successful", request);
             } catch (error) {
-                console.error("Transaction simulation failed:", error);
+                console.error('Simulation error:', error);
+            
+                // Type assertion to specify the expected structure of the error object
+                const typedError = error as { error?: { data?: any } };
+            
+                if (typedError.error && typedError.error.data) {
+                    console.error('Error data:', typedError.error.data);
+                }
+            
                 if (error instanceof Error) {
                     throw new Error(`Transaction simulation failed: ${error.message}`);
                 } else {
