@@ -280,8 +280,37 @@ const CanvasComponent = () => {
             );            
             console.log("Sales data encoded");
 
+            // 2. Create token
+            const createTokenCall = erc721DropInterface.encodeFunctionData(
+                'createDropWithReferral',
+                [
+                    "Playground Pic", // name
+                    "PP", // symbol
+                    address as `0x${string}`, // defaultAdmin
+                    BigInt(1), // editionSize (1 for a single mint)
+                    300, // royaltyBPS (3%)
+                    address as `0x${string}`, // fundsRecipient
+                    saleConfig, // sale configuration
+                    `ipfs://${imageHash}/`, // metadataURIBase
+                    `ipfs://${contractMetadataHash}`, // metadataContractURI
+                    "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}` // createReferral
+                ]
+            );
+            console.log("Token creation data encoded");
+
+            const mintWithRewardsData = erc721DropInterface.encodeFunctionData('mintWithRewards', [
+                address, // recipient
+                BigInt(1), // quantity
+                "", // comment (empty string)
+                "0x124F3eB5540BfF243c2B57504e0801E02696920E" // mintReferral
+            ]);
+            console.log("mintWithRewards data encoded");
+
+
             const setupCalls: readonly `0x${string}`[] = [
                 setSaleConfigCall as `0x${string}`,
+                createTokenCall as `0x${string}`,
+                mintWithRewardsData as `0x${string}`
             ];
             
             console.log("setupCalls prepared successfully");
