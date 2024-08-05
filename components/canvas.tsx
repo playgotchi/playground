@@ -352,7 +352,7 @@ const CanvasComponent = () => {
                 });
                 console.log("Transaction simulation successful", request);
             } catch (error) {
-                console.error('Simulation error:', JSON.stringify(error, null, 2));
+                console.error("Transaction simulation failed:", error);
             
                 // Type assertion to specify the expected structure of the error object
                 const typedError = error as { error?: { data?: any } };
