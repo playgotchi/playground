@@ -263,7 +263,22 @@ const CanvasComponent = () => {
             console.log("Preparing setupCalls...");
             const erc721DropInterface = new ethers.Interface(erc721DropABI);
            
-            // 1. Set up sale configuration
+               // Encode the initialize call
+        const initializeCall = erc721DropInterface.encodeFunctionData('initialize', [
+            "Playground Pic",
+            "PP",
+            address, // _initialOwner
+            address, // _fundsRecipient
+            BigInt(1), // _editionSize
+            300, // _royaltyBPS
+            [], // Empty setupCalls for now
+            '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892', // _metadataRenderer
+            metadataInitializer,
+            "0x124F3eB5540BfF243c2B57504e0801E02696920E" // _createReferral
+        ]);
+        console.log("initializeCall encoded");
+
+            // Set up sale configuration
             const saleConfig = {
                 publicSalePrice: BigInt(0),
                 maxSalePurchasePerAddress: 1,
@@ -279,38 +294,22 @@ const CanvasComponent = () => {
                 Object.values(saleConfig)
             );            
             console.log("Sales data encoded");
-
-            // 2. Create token
-            const createTokenCall = erc721DropInterface.encodeFunctionData(
-                'createDropWithReferral',
-                [
-                    "Playground Pic", // name
-                    "PP", // symbol
-                    address as `0x${string}`, // defaultAdmin
-                    BigInt(1), // editionSize (1 for a single mint)
-                    300, // royaltyBPS (3%)
-                    address as `0x${string}`, // fundsRecipient
-                    saleConfig, // sale configuration
-                    `ipfs://${imageHash}/`, // metadataURIBase
-                    `ipfs://${contractMetadataHash}`, // metadataContractURI
-                    "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}` // createReferral
-                ]
-            );
-            console.log("Token creation data encoded");
-
-            const mintWithRewardsData = erc721DropInterface.encodeFunctionData('mintWithRewards', [
-                address, // recipient
-                BigInt(1), // quantity
-                "", // comment (empty string)
-                "0x124F3eB5540BfF243c2B57504e0801E02696920E" // mintReferral
-            ]);
-            console.log("mintWithRewards data encoded");
-
+            
+       // Encode the adminMint call
+       const recipientAddress = address; // Replace with actual address
+       const mintQuantity = 1;
+       const adminMintCall = erc721DropInterface.encodeFunctionData(
+           'adminMint',
+           [recipientAddress, mintQuantity]
+       );
+       console.log("adminMint encoded");
+     
 
             const setupCalls: readonly `0x${string}`[] = [
-                setSaleConfigCall as `0x${string}`,
-                createTokenCall as `0x${string}`,
-                mintWithRewardsData as `0x${string}`
+                initializeCall as `0x${string}`,  // Initialize the contract
+                setSaleConfigCall as `0x${string}`, // Configure Sales
+                adminMintCall as `0x${string}`,  // adminMint the token
+
             ];
             
             console.log("setupCalls prepared successfully");
