@@ -263,7 +263,7 @@ const CanvasComponent = () => {
             
             console.log("Preparing setupCalls...");
             const erc721DropInterface = new ethers.Interface(erc721DropABI);
-            
+
             // 1. Activate the sale
             const activateSaleData = erc721DropInterface.encodeFunctionData('setSaleConfiguration', [
                 0, // publicSalePrice (0 for free mint)
@@ -274,20 +274,21 @@ const CanvasComponent = () => {
                 0, // presaleEnd
                 ethers.ZeroHash // presaleMerkleRoot
             ]);
-    
-            // 2. Prepare mintWithRewards call
-            const mintWithRewardsData = erc721DropInterface.encodeFunctionData('mintWithRewards', [
+            console.log("Sales data encoded");
+
+            // 2. Admin mint
+            const adminMintData = erc721DropInterface.encodeFunctionData('adminMint', [
                 address, // recipient
-                BigInt(1), // quantity
-                "", // comment (empty string)
-                "0x124F3eB5540BfF243c2B57504e0801E02696920E" // mintReferral
+                BigInt(1) // quantity
             ]);
-    
+            console.log("Admin mint encoded");
+
             // Combine setupCalls
             const setupCalls: readonly `0x${string}`[] = [
                 activateSaleData as `0x${string}`,
-                mintWithRewardsData as `0x${string}`
-            ];    
+                adminMintData as `0x${string}`
+            ];
+            
             console.log("setupCalls prepared successfully");
 
     
@@ -301,10 +302,10 @@ const CanvasComponent = () => {
                 "Playground Pic", // name
                 "PP", // symbol
                 address as `0x${string}`, // defaultAdmin
-                BigInt(2), // editionSize (1 for a single mint)
+                BigInt(1), // editionSize (1 for a single mint)
                 300, // royaltyBPS (3%)
                 address as `0x${string}`, // fundsRecipient
-                setupCalls, // setupCalls with mintWithRewards
+                setupCalls, // setupCalls
                 '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
                 metadataInitializer as `0x${string}`,
                 "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
