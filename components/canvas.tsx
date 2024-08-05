@@ -221,7 +221,6 @@ const CanvasComponent = () => {
     });
 
 
-    
     const handleMint = async () => {
         if (!address) {
             throw new Error("User address is not available");
@@ -261,48 +260,32 @@ const CanvasComponent = () => {
                 [baseURI, contractURI, "0x"] 
             );
             
-            
             console.log("Preparing setupCalls...");
             const erc721DropInterface = new ethers.Interface(erc721DropABI);
            
-            const salesConfiguration = {
+            // 1. Set up sale configuration
+            const saleConfig = {
                 publicSalePrice: BigInt(0),
                 maxSalePurchasePerAddress: 1,
-                publicSaleStart: BigInt(Math.floor(Date.now() / 1000) - 60), // 1 minute ago to ensure it's active
-                publicSaleEnd: BigInt("0xFFFFFFFFFFFFFFFF"), // Far future
+                publicSaleStart: BigInt(0),
+                publicSaleEnd: BigInt("0xFFFFFFFFFFFFFFFF"),
                 presaleStart: BigInt(0),
-                presaleEnd: BigInt(0),
+                presaleEnd: BigInt(0),  
                 presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
             };
 
-             // 1. Activate the sale
-            const activateSaleData = erc721DropInterface.encodeFunctionData('setSaleConfiguration', [
-                salesConfiguration.publicSalePrice,
-                salesConfiguration.maxSalePurchasePerAddress,
-                salesConfiguration.publicSaleStart,
-                salesConfiguration.publicSaleEnd,
-                salesConfiguration.presaleStart,
-                salesConfiguration.presaleEnd,
-                salesConfiguration.presaleMerkleRoot
-            ]);
+            const setSaleConfigCall = erc721DropInterface.encodeFunctionData(
+                'setSaleConfiguration',
+                Object.values(saleConfig)
+            );            
             console.log("Sales data encoded");
 
-            // 2. Admin mint
-            const adminMintData = erc721DropInterface.encodeFunctionData('adminMint', [
-                address, // recipient
-                BigInt(1) // quantity
-            ]);
-            console.log("Admin mint encoded");
-
-            // Combine setupCalls
             const setupCalls: readonly `0x${string}`[] = [
-                activateSaleData as `0x${string}`,
-                adminMintData as `0x${string}`
+                setSaleConfigCall as `0x${string}`,
             ];
             
             console.log("setupCalls prepared successfully");
 
-    
             // Prepare the createAndConfigureDrop function call
             console.log("Preparing createAndConfigureDrop function call...");
             setMintingStep('Creating metadata...');
@@ -312,7 +295,7 @@ const CanvasComponent = () => {
                 "Playground Pic", // name
                 "PP", // symbol
                 address as `0x${string}`, // defaultAdmin
-                BigInt(2), // editionSize (1 for a single mint)
+                BigInt(1), // editionSize (1 for a single mint)
                 300, // royaltyBPS (3%)
                 address as `0x${string}`, // fundsRecipient
                 setupCalls, // setupCalls
@@ -341,7 +324,7 @@ const CanvasComponent = () => {
                 });
                 console.log("Transaction simulation successful", request);
             } catch (error) {
-                console.error('Simulation error:', error);
+                console.error('Simulation error:', JSON.stringify(error, null, 2));
             
                 // Type assertion to specify the expected structure of the error object
                 const typedError = error as { error?: { data?: any } };
