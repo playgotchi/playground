@@ -281,17 +281,17 @@ const CanvasComponent = () => {
             );            
             console.log("Sales data encoded");
             
-        // Encode the purchase call
-        const purchaseCall = erc721DropInterface.encodeFunctionData(
-            'purchase',
-            [1] // Number of tokens to purchase
+        // Encode the adminMintAirdrop call
+        const adminMintAirdropCall = erc721DropInterface.encodeFunctionData(
+            'adminMintAirdrop',
+            [[address]] // Array of recipient addresses
         );
-       console.log("Purchase function encoded");
+       console.log("adminMintAirdrop function encoded");
      
 
             const setupCalls: readonly `0x${string}`[] = [
                 setSaleConfigCall as `0x${string}`, 
-                purchaseCall as `0x${string}`
+                adminMintAirdropCall as `0x${string}`
             ];
             
             console.log("setupCalls prepared successfully");
