@@ -221,6 +221,7 @@ const CanvasComponent = () => {
     });
 
 
+    
     const handleMint = async () => {
         if (!address) {
             throw new Error("User address is not available");
@@ -232,38 +233,27 @@ const CanvasComponent = () => {
         setMintingStep('Capturing image');
     
         try {
-            console.log("Capturing image from whiteboard...");
+            // Capture image and upload to IPFS
             const imageDataUrl = await captureWhiteboard();
-            setMintingStep('Uploading to IPFS');
-            console.log("Image captured, fetching blob...");
             const blob = await (await fetch(imageDataUrl)).blob();
-            console.log("Blob fetched, uploading to IPFS...");
             const imageHash = await uploadToIPFS(blob);
-            console.log("Image uploaded to IPFS, hash:", imageHash);
-            
-            // Create and upload contract metadata
-            console.log("Creating and uploading contract metadata...");
+    
             const contractMetadata = createMetadata(imageHash);
             const contractMetadataHash = await uploadToIPFS(new Blob([JSON.stringify(contractMetadata)], { type: 'application/json' }));
             const contractURI = `ipfs://${contractMetadataHash}`;
-            console.log("Contract metadata uploaded to IPFS, hash:", contractMetadataHash);
-    
             const baseURI = `ipfs://${imageHash}/`;
+    
             setMintingStep('Preparing transaction');
     
             // Prepare metadata initialization
-            console.log("Creating metadataInitializer...");
             const abiCoder = new ethers.AbiCoder();
-
             const metadataInitializer = abiCoder.encode(
                 ['string', 'string', 'string'],
-                [baseURI, contractURI, "0x"] 
+                [baseURI, contractURI, "0x"]
             );
-            
-            console.log("Preparing setupCalls...");
+    
             const erc721DropInterface = new ethers.Interface(erc721DropABI);
-           
-
+    
             // Set up sale configuration
             const saleConfig = {
                 publicSalePrice: BigInt(0),
@@ -274,33 +264,16 @@ const CanvasComponent = () => {
                 presaleEnd: BigInt(0),  
                 presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
             };
-
+    
             const setSaleConfigCall = erc721DropInterface.encodeFunctionData(
                 'setSaleConfiguration',
                 Object.values(saleConfig)
-            );            
-            console.log("Sales data encoded");
-            
-        // Encode the adminMintAirdrop call
-        const adminMintAirdropCall = erc721DropInterface.encodeFunctionData(
-            'adminMintAirdrop',
-            [[address]] // Array of recipient addresses
-        );
-       console.log("adminMintAirdrop function encoded");
-     
-
+            );
+    
             const setupCalls: readonly `0x${string}`[] = [
-                setSaleConfigCall as `0x${string}`, 
-                adminMintAirdropCall as `0x${string}`
+                setSaleConfigCall as `0x${string}`,
             ];
-            
-            console.log("setupCalls prepared successfully");
-
-            // Prepare the createAndConfigureDrop function call
-            console.log("Preparing createAndConfigureDrop function call...");
-            setMintingStep('Creating metadata...');
-          
-            // Create Drop contract
+    
             const args = [
                 "Playground Pic", // name
                 "PP", // symbol
@@ -314,83 +287,51 @@ const CanvasComponent = () => {
                 "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
             ] as const;
     
-            console.log("Args for createAndConfigureDrop:", args);
-    
-            // Simulate the transaction
-            setMintingStep('Simulating transaction...');
-            console.log("Simulating Transaction");
-    
-            try {
-                // Simulate the transaction
-                setMintingStep('Simulating transaction...');
-                console.log("Simulating Transaction");
-            
-                const { request } = await publicClient.simulateContract({
-                    account: address,
-                    address: zoraNftCreatorV1Config.address[base.id],
-                    abi: zoraNftCreatorV1Config.abi,
-                    functionName: "createAndConfigureDrop",
-                    args,
-                });
-                console.log("Transaction simulation successful", request);
-            } catch (error) {
-                console.error("Transaction simulation failed:", error);
-            
-                // Type assertion to specify the expected structure of the error object
-                const typedError = error as { error?: { data?: any } };
-            
-                if (typedError.error && typedError.error.data) {
-                    console.error('Error data:', typedError.error.data);
-                }
-            
-                if (error instanceof Error) {
-                    throw new Error(`Transaction simulation failed: ${error.message}`);
-                } else {
-                    throw new Error('Transaction simulation failed with an unknown error');
-                }
-            }
-    
-            setMintingStep('Deploying smart contract...');
-            const hash = await writeContractAsync({
-                address: zoraNftCreatorV1Config.address[base.id], 
+            // Execute the first transaction (deploy the contract)
+            setMintingStep('Deploying contract...');
+            const deployTx = await writeContractAsync({
+                address: zoraNftCreatorV1Config.address[base.id],
                 abi: zoraNftCreatorV1Config.abi,
                 functionName: "createAndConfigureDrop",
                 args,
             });
     
-            console.log("Transaction hash:", hash);
-            setMintingStep('Waiting for transaction confirmation...');
+            // Wait for the transaction to be mined
+            const receipt = await waitForTransactionReceipt(publicClient, { hash: deployTx });
     
-            // Wait for transaction confirmation
-            const receipt = await waitForTransactionReceipt(publicClient, { hash });
+            // Extract editionContractAddress from the CreatedDrop event
+            const createdDropEvent = receipt.logs.find(log =>
+                log.topics[0] === '0x5754af5e5da2a42f78041e5277cfb80bd4c4cd124f9bc9e4ddd909c66bbfde39'
+            );
     
-            console.log("Transaction receipt:", receipt);
+            if (!createdDropEvent) {
+                throw new Error("CreatedDrop event not found in transaction receipt");
+            }
     
-                  // Extract editionContractAddress from the CreatedDrop event
-        const createdDropEvent = receipt.logs.find(log =>
-            log.topics[0] === '0x5754af5e5da2a42f78041e5277cfb80bd4c4cd124f9bc9e4ddd909c66bbfde39'
-        );
-
-        if (createdDropEvent) {
-            const editionContractAddress = createdDropEvent.address;
+            const editionContractAddress = createdDropEvent.address as `0x${string}`;
             console.log(`New drop created: ${editionContractAddress}`);
+            
+            // Execute the second transaction (mint the token)
+            setMintingStep('Minting token...');
+            const mintTx = await writeContractAsync({
+                address: editionContractAddress,
+                abi: erc721DropABI,
+                functionName: 'mintWithRewards',
+                args: [address, 1n, "", "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`],
+            });
+    
+            // Wait for the mint transaction to be mined
+            await waitForTransactionReceipt(publicClient, { hash: mintTx });
+    
             setMintingSuccess(true);
-            setMintingStep('Drop created successfully');
-        } else {
-            throw new Error("CreatedDrop event not found in transaction receipt");
-        }
-    } catch (error) {
-        console.error('Error minting token:', error);
-        if (error instanceof ContractFunctionExecutionError) {
-            console.error("Contract error details:", error.cause);
-            setMintingError(`Contract error: ${error.cause?.message || error.message}`);
-        } else {
+            setMintingStep('Token minted successfully');
+        } catch (error) {
+            console.error('Error minting token:', error);
             setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
+        } finally {
+            setIsMinting(false);
         }
-    } finally {
-        setIsMinting(false);
-    }
-};
+    };
 
     useEffect(() => {
         const canvas = initializeFabric({ canvasRef, fabricRef });
