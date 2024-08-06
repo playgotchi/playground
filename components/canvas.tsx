@@ -263,20 +263,6 @@ const CanvasComponent = () => {
             console.log("Preparing setupCalls...");
             const erc721DropInterface = new ethers.Interface(erc721DropABI);
            
-               // Encode the initialize call
-        const initializeCall = erc721DropInterface.encodeFunctionData('initialize', [
-            "Playground Pic",
-            "PP",
-            address, // _initialOwner
-            address, // _fundsRecipient
-            BigInt(1), // _editionSize
-            300, // _royaltyBPS
-            [], // Empty setupCalls for now
-            '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892', // _metadataRenderer
-            metadataInitializer,
-            "0x124F3eB5540BfF243c2B57504e0801E02696920E" // _createReferral
-        ]);
-        console.log("initializeCall encoded");
 
             // Set up sale configuration
             const saleConfig = {
@@ -295,21 +281,17 @@ const CanvasComponent = () => {
             );            
             console.log("Sales data encoded");
             
-       // Encode the adminMint call
-       const recipientAddress = address; // Replace with actual address
-       const mintQuantity = 1;
-       const adminMintCall = erc721DropInterface.encodeFunctionData(
-           'adminMint',
-           [recipientAddress, mintQuantity]
-       );
-       console.log("adminMint encoded");
+        // Encode the purchase call
+        const purchaseCall = erc721DropInterface.encodeFunctionData(
+            'purchase',
+            [1] // Number of tokens to purchase
+        );
+       console.log("Purchase function encoded");
      
 
             const setupCalls: readonly `0x${string}`[] = [
-                initializeCall as `0x${string}`,  // Initialize the contract
-                setSaleConfigCall as `0x${string}`, // Configure Sales
-                adminMintCall as `0x${string}`,  // adminMint the token
-
+                setSaleConfigCall as `0x${string}`, 
+                purchaseCall as `0x${string}`
             ];
             
             console.log("setupCalls prepared successfully");
