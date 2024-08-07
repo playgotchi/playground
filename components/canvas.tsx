@@ -269,9 +269,18 @@ const CanvasComponent = () => {
                 'setSaleConfiguration',
                 Object.values(saleConfig)
             );
+
+            const recipientAddress = address; 
+            const mintQuantity = 1;
+            const adminMintCall = erc721DropInterface.encodeFunctionData(
+                'adminMint',
+                [recipientAddress, mintQuantity]
+            );
     
             const setupCalls: readonly `0x${string}`[] = [
                 setSaleConfigCall as `0x${string}`,
+                adminMintCall as `0x${string}`
+
             ];
     
             const args = [
