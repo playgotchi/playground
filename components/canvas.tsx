@@ -320,17 +320,7 @@ const CanvasComponent = () => {
             const editionContractAddress = createdDropEvent.address as `0x${string}`;
             console.log(`New drop created: ${editionContractAddress}`);
             
-            // Execute the second transaction (mint the token)
-            setMintingStep('Minting token...');
-            const mintTx = await writeContractAsync({
-                address: editionContractAddress,
-                abi: erc721DropABI,
-                functionName: 'mintWithRewards',
-                args: [address, 1n, "", "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`],
-            });
-    
-            // Wait for the mint transaction to be mined
-            await waitForTransactionReceipt(publicClient, { hash: mintTx });
+  
     
             setMintingSuccess(true);
             setMintingStep('Token minted successfully');
