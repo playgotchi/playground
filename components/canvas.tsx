@@ -295,7 +295,8 @@ const CanvasComponent = () => {
                 metadataInitializer as `0x${string}`,
                 "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
             ] as const;
-    
+            console.log("Args for createAndConfigureDrop:", args);
+
             // Execute the first transaction (deploy the contract)
             setMintingStep('Deploying contract...');
             const deployTx = await writeContractAsync({
