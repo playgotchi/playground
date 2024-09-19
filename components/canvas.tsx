@@ -50,7 +50,7 @@ const CanvasComponent = () => {
     const [mintingSuccess, setMintingSuccess] = useState(false);
     const [mintData, setMintData] = useState<string | null>(null);
     const [tokenId, setTokenId] = useState<bigint | null>(null);
-
+    const [editionContractAddress, setEditionContractAddress] = useState<`0x${string}` | null>(null);
 
 
     const undo = useUndo();
@@ -270,16 +270,10 @@ const CanvasComponent = () => {
                 Object.values(saleConfig)
             );
 
-            const recipientAddress = address; 
-            const mintQuantity = 1;
-            const adminMintCall = erc721DropInterface.encodeFunctionData(
-                'adminMint',
-                [recipientAddress, mintQuantity]
-            );
+
     
             const setupCalls: readonly `0x${string}`[] = [
-                setSaleConfigCall as `0x${string}`,
-                adminMintCall as `0x${string}`
+                setSaleConfigCall as `0x${string}`
 
             ];
     
@@ -288,7 +282,7 @@ const CanvasComponent = () => {
                 "PP", // symbol
                 address as `0x${string}`, // defaultAdmin
                 BigInt(1), // editionSize (1 for a single mint)
-                300, // royaltyBPS (3%)
+                0, // royaltyBPS (0%)
                 address as `0x${string}`, // fundsRecipient
                 setupCalls, // setupCalls
                 '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
@@ -318,10 +312,43 @@ const CanvasComponent = () => {
                 throw new Error("CreatedDrop event not found in transaction receipt");
             }
     
-            const editionContractAddress = createdDropEvent.address as `0x${string}`;
-            console.log(`New drop created: ${editionContractAddress}`);
+        const newEditionContractAddress = createdDropEvent.address as `0x${string}`;
+        setEditionContractAddress(newEditionContractAddress);
+        console.log(`New drop created: ${newEditionContractAddress}`);
             
   
+    
+            setMintingSuccess(true);
+            setMintingStep('Token minted successfully');
+        } catch (error) {
+            console.error('Error minting token:', error);
+            setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
+        } finally {
+            setIsMinting(false);
+        }
+    };
+
+    const handleAdminMint = async () => {
+        if (!address || !editionContractAddress) {
+            throw new Error("User address or contract address is not available");
+        }
+    
+        setIsMinting(true);
+        setMintingError(null);
+        setMintingSuccess(false);
+        setMintingStep('Minting token');
+    
+        try {
+            const mintQuantity = BigInt(1);
+            const recipientAddress = address;
+            const adminMintTx = await writeContractAsync({
+                address: editionContractAddress,
+                abi: erc721DropABI,
+                functionName: "adminMint",
+                args: [recipientAddress, mintQuantity],
+            });
+    
+            await waitForTransactionReceipt(publicClient, { hash: adminMintTx });
     
             setMintingSuccess(true);
             setMintingStep('Token minted successfully');
@@ -484,13 +511,20 @@ const CanvasComponent = () => {
                     handleCapture={handleCapture}
                     exportWhiteboard={exportWhiteboard}
                     handleMint={handleMint}
+                    handleAdminMint={handleAdminMint}
                     isExporting={isExporting}
                     isMinting={isMinting}
                     mintingStep={mintingStep}
                     mintingSuccess={mintingSuccess}
                     mintingError={mintingError}
+                    
                 />
-            </section>           
+            </section>   
+            {capturedImage && (
+          <div className="fixed bottom-4 right-4 p-2 bg-white rounded shadow">
+            <img src={capturedImage} alt="Captured Whiteboard" className="w-32 h-32 object-cover" />
+          </div>
+        )}        
         </main>
     );
 };
