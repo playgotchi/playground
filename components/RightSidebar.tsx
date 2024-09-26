@@ -21,7 +21,6 @@ const RightSidebar = ({
   handleCapture,
   exportWhiteboard,
   handleMint,
-  handleAdminMint,
   isExporting,
   isMinting,
   mintingStep,
@@ -106,7 +105,7 @@ const RightSidebar = ({
           </Button>
           <Button
           variant={"secondary"}
-            onClick={handleAdminMint}
+            onClick={handleMint}
             className="text-white p-2 rounded disabled:bg-gray-400"
           >
             {isMinting ? `Minting... (${mintingStep})` : 'Mint'}

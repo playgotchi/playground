@@ -41,6 +41,7 @@
     "@vercel/kv": "^1.0.1",
     "@zoralabs/protocol-deployments": "^0.1.13",
     "@zoralabs/protocol-sdk": "^0.7.2",
+    "@zoralabs/zora-1155-contracts": "^2.12.4",
     "@zoralabs/zora-721-contracts": "^1.15.4",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",

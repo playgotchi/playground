@@ -100,7 +100,6 @@ export type RightSidebarProps = {
   handleCapture: () => void;
   exportWhiteboard: () => void; // Changed from handleExport to exportWhiteboard
   handleMint: () => void;
-  handleAdminMint: () => void;
   isExporting: boolean;
   isMinting: boolean;
   mintingStep: string;

@@ -18,6 +18,7 @@ import { ContractFunctionExecutionError, encodeAbiParameters, parseAbiParameters
 import { erc721DropABI } from "@zoralabs/zora-721-contracts";
 import { zoraNftCreatorV1Config } from '@zoralabs/zora-721-contracts';
 import { base } from 'wagmi/chains';
+import { zoraCreator1155FactoryImplConfig } from '@zoralabs/protocol-deployments';
 import { waitForTransactionReceipt } from 'viem/actions';
 import { ethers } from 'ethers';
 
@@ -222,143 +223,111 @@ const CanvasComponent = () => {
 
 
     
-    const handleMint = async () => {
-        if (!address) {
-            throw new Error("User address is not available");
+const handleMint = async () => {
+    if (!address) {
+        throw new Error("User address is not available");
+    }
+
+    setIsMinting(true);
+    setMintingError(null);
+    setMintingSuccess(false);
+    setMintingStep('Capturing image');
+
+    try {
+        // Capture image and upload to IPFS
+        const imageDataUrl = await captureWhiteboard();
+        const blob = await (await fetch(imageDataUrl)).blob();
+        const imageHash = await uploadToIPFS(blob);
+
+        const contractMetadata = createMetadata(imageHash);
+        const contractMetadataHash = await uploadToIPFS(new Blob([JSON.stringify(contractMetadata)], { type: 'application/json' }));
+        const contractURI = `ipfs://${contractMetadataHash}`;
+
+        setMintingStep('Preparing transaction');
+
+        // Prepare contract creation parameters
+        const name = "Playground Pic";
+        const defaultRoyaltyConfiguration = {
+            royaltyMintSchedule: 0, // Immediate
+            royaltyBPS: 300, // 3%
+            royaltyRecipient: address
+        };
+        const defaultAdmin = address;
+
+        // Prepare setup actions
+        const erc1155CreatorInterface = new ethers.Interface(zoraCreator1155FactoryImplConfig.abi); // You'll need to import this ABI
+
+        // Action 1: Create a token
+        const createTokenAction = erc1155CreatorInterface.encodeFunctionData(
+            'createToken',
+            ["PP", "", 1, 0] // [tokenURI, tokenMaxSupply, autoIncrement]
+        );
+
+        // Action 2: Set up sale configuration
+        const setSaleConfigAction = erc1155CreatorInterface.encodeFunctionData(
+            'setSaleConfiguration',
+            [1, { // tokenId
+                salePrice: BigInt(0),
+                maxTokensPerAddress: 1,
+                pricePerToken: BigInt(0),
+                startTime: BigInt(0),
+                endTime: BigInt("0xFFFFFFFFFFFFFFFF"),
+                fundingRecipient: address
+            }]
+        );
+
+        // Action 3: Mint a token
+        const adminMintAction = erc1155CreatorInterface.encodeFunctionData('adminMint', [address, 1, 1]);
+
+
+        const setupActions: readonly `0x${string}`[] = [
+            createTokenAction as `0x${string}`,
+            setSaleConfigAction as `0x${string}`,
+            adminMintAction as `0x${string}`
+        ];
+        console.log("setupActions:", setupActions);
+ 
+
+        // Prepare transaction for contract creation
+        setMintingStep('Creating contract...');
+        const createContractTx = await writeContractAsync({
+            address: '0x777777C338d93e2C7adf08D102d45CA7CC4Ed021' as `0x${string}`, // Factory address
+            abi: zoraCreator1155FactoryImplConfig.abi, // You'll need to import this ABI
+            functionName: "createContract",
+            args: [
+                contractURI,
+                name,
+                defaultRoyaltyConfiguration,
+                defaultAdmin,
+                setupActions
+            ] as const,
+        });
+        console.log("createContractTx:", createContractTx);
+
+        // Wait for the transaction to be mined
+        const receipt = await waitForTransactionReceipt(publicClient, { hash: createContractTx });
+
+        // Extract new contract address from the event
+        const createdContractEvent = receipt.logs.find(log =>
+            log.topics[0] === ethers.id("CreatedContract(address,address)")
+        );
+
+        if (!createdContractEvent) {
+            throw new Error("CreatedContract event not found in transaction receipt");
         }
-        
-        setIsMinting(true);
-        setMintingError(null);
-        setMintingSuccess(false);
-        setMintingStep('Capturing image');
-    
-        try {
-            // Capture image and upload to IPFS
-            const imageDataUrl = await captureWhiteboard();
-            const blob = await (await fetch(imageDataUrl)).blob();
-            const imageHash = await uploadToIPFS(blob);
-    
-            const contractMetadata = createMetadata(imageHash);
-            const contractMetadataHash = await uploadToIPFS(new Blob([JSON.stringify(contractMetadata)], { type: 'application/json' }));
-            const contractURI = `ipfs://${contractMetadataHash}`;
-            const baseURI = `ipfs://${imageHash}/`;
-    
-            setMintingStep('Preparing transaction');
-    
-            // Prepare metadata initialization
-            const abiCoder = new ethers.AbiCoder();
-            const metadataInitializer = abiCoder.encode(
-                ['string', 'string', 'string'],
-                [baseURI, contractURI, "0x"]
-            );
-    
-            const erc721DropInterface = new ethers.Interface(erc721DropABI);
-    
-            // Set up sale configuration
-            const saleConfig = {
-                publicSalePrice: BigInt(0),
-                maxSalePurchasePerAddress: 1,
-                publicSaleStart: BigInt(0),
-                publicSaleEnd: BigInt("0xFFFFFFFFFFFFFFFF"),
-                presaleStart: BigInt(0),
-                presaleEnd: BigInt(0),  
-                presaleMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000"
-            };
-    
-            const setSaleConfigCall = erc721DropInterface.encodeFunctionData(
-                'setSaleConfiguration',
-                Object.values(saleConfig)
-            );
 
+ 
 
-    
-            const setupCalls: readonly `0x${string}`[] = [
-                setSaleConfigCall as `0x${string}`
+        setMintingSuccess(true);
+        setMintingStep('Contract created and token minted successfully');
+    } catch (error) {
+        console.error('Error creating contract and minting token:', error);
+        setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
+    } finally {
+        setIsMinting(false);
+    }
+};
 
-            ];
-    
-            const args = [
-                "Playground Pic", // name
-                "PP", // symbol
-                address as `0x${string}`, // defaultAdmin
-                BigInt(1), // editionSize (1 for a single mint)
-                0, // royaltyBPS (0%)
-                address as `0x${string}`, // fundsRecipient
-                setupCalls, // setupCalls
-                '0x7d1a46c6e614A0091c39E102F2798C27c1fA8892' as `0x${string}`, // metadataRenderer (EDITION_METADATA_RENDERER)
-                metadataInitializer as `0x${string}`,
-                "0x124F3eB5540BfF243c2B57504e0801E02696920E" as `0x${string}`, // createReferral
-            ] as const;
-            console.log("Args for createAndConfigureDrop:", args);
-
-            // Execute the first transaction (deploy the contract)
-            setMintingStep('Deploying contract...');
-            const deployTx = await writeContractAsync({
-                address: zoraNftCreatorV1Config.address[base.id],
-                abi: zoraNftCreatorV1Config.abi,
-                functionName: "createAndConfigureDrop",
-                args,
-            });
-    
-            // Wait for the transaction to be mined
-            const receipt = await waitForTransactionReceipt(publicClient, { hash: deployTx });
-    
-            // Extract editionContractAddress from the CreatedDrop event
-            const createdDropEvent = receipt.logs.find(log =>
-                log.topics[0] === '0x5754af5e5da2a42f78041e5277cfb80bd4c4cd124f9bc9e4ddd909c66bbfde39'
-            );
-    
-            if (!createdDropEvent) {
-                throw new Error("CreatedDrop event not found in transaction receipt");
-            }
-    
-        const newEditionContractAddress = createdDropEvent.address as `0x${string}`;
-        setEditionContractAddress(newEditionContractAddress);
-        console.log(`New drop created: ${newEditionContractAddress}`);
-            
-  
-    
-            setMintingSuccess(true);
-            setMintingStep('Token minted successfully');
-        } catch (error) {
-            console.error('Error minting token:', error);
-            setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
-        } finally {
-            setIsMinting(false);
-        }
-    };
-
-    const handleAdminMint = async () => {
-        if (!address || !editionContractAddress) {
-            throw new Error("User address or contract address is not available");
-        }
-    
-        setIsMinting(true);
-        setMintingError(null);
-        setMintingSuccess(false);
-        setMintingStep('Minting token');
-    
-        try {
-            const mintQuantity = BigInt(1);
-            const recipientAddress = address;
-            const adminMintTx = await writeContractAsync({
-                address: editionContractAddress,
-                abi: erc721DropABI,
-                functionName: "adminMint",
-                args: [recipientAddress, mintQuantity],
-            });
-    
-            await waitForTransactionReceipt(publicClient, { hash: adminMintTx });
-    
-            setMintingSuccess(true);
-            setMintingStep('Token minted successfully');
-        } catch (error) {
-            console.error('Error minting token:', error);
-            setMintingError(error instanceof Error ? error.message : 'An unknown error occurred');
-        } finally {
-            setIsMinting(false);
-        }
-    };
 
     useEffect(() => {
         const canvas = initializeFabric({ canvasRef, fabricRef });
@@ -511,7 +480,6 @@ const CanvasComponent = () => {
                     handleCapture={handleCapture}
                     exportWhiteboard={exportWhiteboard}
                     handleMint={handleMint}
-                    handleAdminMint={handleAdminMint}
                     isExporting={isExporting}
                     isMinting={isMinting}
                     mintingStep={mintingStep}
