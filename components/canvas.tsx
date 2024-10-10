@@ -242,6 +242,7 @@ const handleMint = async () => {
         const contractMetadata = createMetadata(imageHash);
         const contractMetadataHash = await uploadToIPFS(new Blob([JSON.stringify(contractMetadata)], { type: 'application/json' }));
         const contractURI = `ipfs://${contractMetadataHash}`;
+        const tokenURI = `ipfs://${contractMetadataHash}`;
 
         setMintingStep('Preparing transaction');
 
@@ -253,16 +254,20 @@ const handleMint = async () => {
             royaltyRecipient: address
         };
         const defaultAdmin = address;
+        const maxSupply = BigInt(1);
 
         // Prepare setup actions
         const erc1155CreatorInterface = new ethers.Interface(zoraCreator1155FactoryImplConfig.abi); // You'll need to import this ABI
 
         // Action 1: Create a token
         const createTokenAction = erc1155CreatorInterface.encodeFunctionData(
-            'createToken',
-            ["PP", "", 1, 0] // [tokenURI, tokenMaxSupply, autoIncrement]
+            'setupNewTokenWithCreateReferral',
+            [
+                tokenURI, // newURI
+                maxSupply, // maxSupply: MAX_INT for open edition
+                address // createReferral: your address for rewards
+            ]
         );
-
         // Action 2: Set up sale configuration
         const setSaleConfigAction = erc1155CreatorInterface.encodeFunctionData(
             'setSaleConfiguration',
