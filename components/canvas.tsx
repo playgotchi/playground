@@ -269,7 +269,7 @@ const handleMint = async () => {
         
         // Action 2: Set up sale configuration (same as before)
         const setSaleConfigAction = erc1155CreatorInterface.encodeFunctionData(
-            'setSaleConfiguration',
+            'setSale',
             [
                 1, // tokenId, assuming 1 for this example
                 {
