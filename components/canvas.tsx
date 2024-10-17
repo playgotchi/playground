@@ -18,7 +18,7 @@ import { ContractFunctionExecutionError, encodeAbiParameters, parseAbiParameters
 import { erc721DropABI } from "@zoralabs/zora-721-contracts";
 import { zoraNftCreatorV1Config } from '@zoralabs/zora-721-contracts';
 import { base } from 'wagmi/chains';
-import { zoraCreator1155FactoryImplConfig } from '@zoralabs/protocol-deployments';
+import { zoraCreator1155FactoryImplConfig, zoraCreator1155ImplABI } from '@zoralabs/protocol-deployments';
 import { waitForTransactionReceipt } from 'viem/actions';
 import { ethers } from 'ethers';
 
@@ -251,63 +251,75 @@ const handleMint = async () => {
         const defaultRoyaltyConfiguration = {
             royaltyMintSchedule: 0, // Immediate
             royaltyBPS: 300, // 3%
-            royaltyRecipient: address
+            royaltyRecipient: address // Your address for royalties
         };
         const defaultAdmin = address;
-        const maxSupply = BigInt(1);
+        const maxSupply = BigInt(1); 
 
-        // Prepare setup actions
-        const erc1155CreatorInterface = new ethers.Interface(zoraCreator1155FactoryImplConfig.abi); // You'll need to import this ABI
-
-        // Action 1: Create a token
-        const createTokenAction = erc1155CreatorInterface.encodeFunctionData(
-            'setupNewTokenWithCreateReferral',
-            [
-                tokenURI, // newURI
-                maxSupply, // maxSupply: MAX_INT for open edition
-                address // createReferral: your address for rewards
-            ]
-        );
-        // Action 2: Set up sale configuration
+        const erc1155CreatorInterface = new ethers.Interface(zoraCreator1155FactoryImplConfig.abi);     
+        const getSetupNewTokenCall = (uri: string, maxSupply: bigint) =>
+          encodeFunctionData({
+            abi: zoraCreator1155ImplABI, 
+            functionName: 'setupNewToken',
+            args: [uri, maxSupply],
+          });
+        
+        // Create the setup token action using the updated method
+        const createTokenAction = getSetupNewTokenCall(tokenURI, maxSupply);
+        
+        // Action 2: Set up sale configuration (same as before)
         const setSaleConfigAction = erc1155CreatorInterface.encodeFunctionData(
             'setSaleConfiguration',
-            [1, { // tokenId
-                salePrice: BigInt(0),
-                maxTokensPerAddress: 1,
-                pricePerToken: BigInt(0),
-                startTime: BigInt(0),
-                endTime: BigInt("0xFFFFFFFFFFFFFFFF"),
-                fundingRecipient: address
-            }]
+            [
+                1, // tokenId, assuming 1 for this example
+                {
+                    salePrice: BigInt(0), // Free mint or adjust price as needed
+                    maxTokensPerAddress: 1,
+                    pricePerToken: BigInt(0),
+                    startTime: BigInt(0), // Adjust as needed
+                    endTime: BigInt("0xFFFFFFFFFFFFFFFF"), // No end time for sale
+                    fundingRecipient: address // Your address for receiving funds
+                }
+            ]
         );
-
-        // Action 3: Mint a token
-        const adminMintAction = erc1155CreatorInterface.encodeFunctionData('adminMint', [address, 1, 1]);
-
-
+        
+        // Action 3: Mint a token as admin (same as before)
+        const adminMintAction = erc1155CreatorInterface.encodeFunctionData(
+            'adminMint',
+            [
+                address, // Recipient address
+                1, // tokenId
+                1  // quantity
+            ]
+        );
+        
+        // Combine all the actions into setupActions array
         const setupActions: readonly `0x${string}`[] = [
             createTokenAction as `0x${string}`,
             setSaleConfigAction as `0x${string}`,
             adminMintAction as `0x${string}`
         ];
+        
         console.log("setupActions:", setupActions);
- 
-
+        
         // Prepare transaction for contract creation
         setMintingStep('Creating contract...');
+        
         const createContractTx = await writeContractAsync({
             address: '0x777777C338d93e2C7adf08D102d45CA7CC4Ed021' as `0x${string}`, // Factory address
-            abi: zoraCreator1155FactoryImplConfig.abi, // You'll need to import this ABI
+            abi: zoraCreator1155FactoryImplConfig.abi, // Zora's 1155 Factory ABI
             functionName: "createContract",
             args: [
-                contractURI,
-                name,
-                defaultRoyaltyConfiguration,
-                defaultAdmin,
-                setupActions
+                contractURI, // Contract-level metadata URI
+                name,        // Name of the collection/token
+                defaultRoyaltyConfiguration, // Royalty configuration
+                defaultAdmin, // Admin of the contract
+                setupActions  // Actions array, properly encoded
             ] as const,
         });
+        
         console.log("createContractTx:", createContractTx);
+        
 
         // Wait for the transaction to be mined
         const receipt = await waitForTransactionReceipt(publicClient, { hash: createContractTx });
